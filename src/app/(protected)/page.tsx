@@ -245,11 +245,9 @@ export default function Home() {
               className="grid grid-cols-[150px_repeat(7,_1fr)] border-b border-slate-100 last:border-b-0"
             >
               <div className="flex items-center justify-center border-r border-slate-100 bg-slate-50 px-4 py-5 text-sm font-medium text-slate-600">
-                {slot.label.split("\n").map((line) => (
-                  <span key={line} className="block leading-tight">
-                    {line}
-                  </span>
-                ))}
+                <span className="block leading-tight whitespace-pre-line text-center">
+                  {slot.label.replace(/午後1/g, "午後１").replace(/午後2/g, "午後２")}
+                </span>
               </div>
               {dates.map((item) => (
                 <div

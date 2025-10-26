@@ -2,9 +2,9 @@ export type ISODateString = `${number}-${number}-${number}`;
 
 export function startOfWeek(date: Date): Date {
   const cloned = new Date(date);
-  const day = cloned.getDay(); // 0 (Sunday) - 6
-  const diff = cloned.getDate() - day;
-  cloned.setDate(diff);
+  const day = cloned.getDay(); // 0 (Sunday) - 6 (Saturday)
+  const offset = (day + 6) % 7; // Monday becomes 0
+  cloned.setDate(cloned.getDate() - offset);
   cloned.setHours(0, 0, 0, 0);
   return cloned;
 }
@@ -27,4 +27,3 @@ export function formatDisplayDate(date: Date): string {
   });
   return formatter.format(date);
 }
-
