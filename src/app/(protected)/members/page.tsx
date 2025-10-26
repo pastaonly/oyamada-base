@@ -5,7 +5,6 @@ import { collection, doc, onSnapshot, orderBy, query, setDoc } from "firebase/fi
 import { Avatar } from "@/components/common/Avatar";
 import { MarkdownContent } from "@/components/common/MarkdownContent";
 import { SPACES, type SpaceKey } from "@/constants/schedule";
-import type { MemberType } from "@/types/user";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { db } from "@/lib/firebaseConfig";
 
@@ -17,7 +16,6 @@ type RegisteredMember = {
   nickname: string;
   bio: string;
   photoURL: string;
-  memberType: MemberType;
   preferredRoom: SpaceKey | null;
 };
 
@@ -35,17 +33,9 @@ type CombinedMember = {
   nickname: string;
   photoURL: string;
   bio: string;
-  memberType: MemberType;
   preferredRoom: SpaceKey | null;
   contractPreferredRoom: SpaceKey | null;
   status: "registered" | "pending";
-};
-
-const MEMBER_TYPE_LABEL: Record<Exclude<MemberType, null>, string> = {
-  adult: "大人会員",
-  child: "子ども会員",
-  guest: "ゲスト",
-  other: "その他",
 };
 
 const CONTRACT_COLLECTION = "memberContracts";
@@ -56,13 +46,6 @@ const ROOM_OPTIONS: { value: SpaceKey | null; label: string }[] = [
   { value: "back", label: SPACES.back.label },
   { value: "living", label: SPACES.living.label },
 ];
-
-function getMemberTypeLabel(memberType: MemberType) {
-  if (!memberType) {
-    return "未設定";
-  }
-  return MEMBER_TYPE_LABEL[memberType];
-}
 
 function getPreferredRoomLabel(room: SpaceKey | null) {
   if (!room) {
@@ -105,7 +88,6 @@ export default function MembersPage() {
               : fallbackName,
           bio: typeof data.bio === "string" ? data.bio : "",
           photoURL: typeof data.photoURL === "string" ? data.photoURL : "",
-          memberType: (data.memberType as MemberType) ?? null,
           preferredRoom: (data.preferredRoom as SpaceKey | null) ?? null,
         };
       });
@@ -154,7 +136,6 @@ export default function MembersPage() {
         nickname: member.nickname,
         photoURL: member.photoURL,
         bio: member.bio,
-        memberType: member.memberType,
         preferredRoom: member.preferredRoom,
         contractPreferredRoom: null,
         status: "registered",
@@ -179,7 +160,6 @@ export default function MembersPage() {
             nickname: name,
             photoURL: "",
             bio: "",
-            memberType: null,
             preferredRoom: record.preferredRoom ?? null,
             contractPreferredRoom: record.preferredRoom ?? null,
             status: "pending",
@@ -206,7 +186,7 @@ export default function MembersPage() {
 
   const isLoading = usersLoading || (isAdmin && contractsLoading);
 
-  const selectedMember = selectedMemberId
+const selectedMember = selectedMemberId
     ? combinedMembers.find((member) => member.id === selectedMemberId) ?? null
     : null;
 
@@ -330,9 +310,6 @@ export default function MembersPage() {
                 <div className="space-y-3 px-5 py-4 text-sm text-slate-700">
                   <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                     <span className="rounded-full border border-slate-200 px-2 py-0.5">
-                      {getMemberTypeLabel(member.memberType)}
-                    </span>
-                    <span className="rounded-full border border-slate-200 px-2 py-0.5">
                       優先部屋: {preferredRoomLabel}
                     </span>
                   </div>
@@ -393,9 +370,6 @@ export default function MembersPage() {
             </div>
             <div className="space-y-4 px-6 py-5 text-sm text-slate-700">
               <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                <span className="rounded-full border border-slate-200 px-2 py-0.5">
-                  {getMemberTypeLabel(selectedMember.memberType)}
-                </span>
                 <span className="rounded-full border border-slate-200 px-2 py-0.5">
                   優先部屋:{" "}
                   {getPreferredRoomLabel(
