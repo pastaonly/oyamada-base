@@ -11,7 +11,7 @@ import {
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebaseConfig";
 
-const PRE_REGISTERED_COLLECTION = "preRegisteredMembers";
+const CONTRACT_COLLECTION = "memberContracts";
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
 export default function LoginPage() {
@@ -27,11 +27,11 @@ export default function LoginPage() {
     }
 
     // 事前登録済みメールアドレス（管理者が Firestore 上で管理）を確認
-    const preRegisteredSnapshot = await getDoc(
-      doc(db, PRE_REGISTERED_COLLECTION, email),
+    const contractSnapshot = await getDoc(
+      doc(db, CONTRACT_COLLECTION, email),
     );
 
-    if (!preRegisteredSnapshot.exists()) {
+    if (!contractSnapshot.exists()) {
       await signOut(auth);
       throw new Error("このメールアドレスは登録されていません");
     }

@@ -18,7 +18,7 @@
 2. `.env.example` を参考に `.env.local` を作成し、Firebase プロジェクトの値を設定します。  
    `NEXT_PUBLIC_ADMIN_EMAIL` には管理者判定に利用するメールアドレスを指定してください。
 
-3. `firebase` プロジェクトには、会員メールの事前登録用として `preRegisteredMembers` コレクションを用意し、ドキュメント ID にメールアドレスを設定してください（例：`test@example.com`）。
+3. `firebase` プロジェクトには、会員メールの事前登録用として `memberContracts` コレクションを用意し、ドキュメント ID にメールアドレスを設定してください（例：`test@example.com`）。
 
 4. 開発サーバーを起動  
    ```bash
@@ -64,7 +64,7 @@
 ### データモデル補足
 
 - `users/{uid}` ドキュメントには `preferredRoom`（`front` / `back` / `living` / null）を想定
-- `preRegisteredMembers/{email}` が存在するメールアドレスのみログイン可能
+- `memberContracts/{email}` が存在するメールアドレスのみログイン可能
 - `reservations/{id}` ドキュメント例
   ```json
   {
@@ -85,7 +85,7 @@
 ### Firestore セキュリティルール
 
 `firestore.rules` では以下を許可しています。
-- `preRegisteredMembers`: 読み取りのみ（管理者が別途メンテナンス）
+- `memberContracts`: 読み取りのみ（管理者が別途メンテナンス）
 - `users/{uid}`: 当人のみ読み書き可能
 - `reservations/{id}`: 全員が閲覧可能、自分の予約のみ作成・更新・削除可能
 
