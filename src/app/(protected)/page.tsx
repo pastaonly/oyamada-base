@@ -16,26 +16,15 @@ import {
 } from "@/services/reservations";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Avatar } from "@/components/common/Avatar";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebaseConfig";
 
 const heroIcon = {
   prev: <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />,
   next: <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />,
 };
 
-function buildSpaceOrder(preferredRoom: SpaceKey | null): SpaceKey[] {
-  const defaultOrder: SpaceKey[] = ["front", "back", "living"];
-
-  if (!preferredRoom) {
-    return defaultOrder;
-  }
-
-  if (preferredRoom === "living") {
-    return ["living", "front", "back"];
-  }
-
-  const others = defaultOrder.filter((space) => space !== preferredRoom && space !== "living");
-  return [preferredRoom, "living", ...others];
-}
+const SPACE_DISPLAY_ORDER: SpaceKey[] = ["front", "back", "living"];
 
 function getInitial(name: string) {
   if (!name) return "?";
@@ -62,6 +51,8 @@ export default function Home() {
   const [isCommentSaving, setIsCommentSaving] = useState(false);
   const [selectedTodayUserId, setSelectedTodayUserId] = useState<string | null>(null);
   const [selectedTomorrowUserId, setSelectedTomorrowUserId] = useState<string | null>(null);
+  const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false);
+  const [pendingFavorite, setPendingFavorite] = useState<SpaceKey | null>(null);
 
   const today = useMemo(() => {
     const now = new Date();
@@ -88,13 +79,14 @@ export default function Home() {
     });
   }, [weekStartDate]);
 
-  const spaceOrder = useMemo(() => buildSpaceOrder(userProfile?.preferredRoom ?? null), [
-    userProfile?.preferredRoom,
-  ]);
+  const effectivePreferredRoom = pendingFavorite ?? userProfile?.preferredRoom ?? null;
+  const spaceOrder = SPACE_DISPLAY_ORDER;
 
   useEffect(() => {
-    setActiveSpace(spaceOrder[0] ?? "front");
-  }, [spaceOrder]);
+    if (effectivePreferredRoom) {
+      setActiveSpace(effectivePreferredRoom);
+    }
+  }, [effectivePreferredRoom]);
 
   useEffect(() => {
     if (dates.length === 0) {
@@ -310,6 +302,32 @@ export default function Home() {
 
   const toggleSelectTomorrowUser = (userId: string) => {
     setSelectedTomorrowUserId((current) => (current === userId ? null : userId));
+  };
+
+  useEffect(() => {
+    setPendingFavorite(null);
+  }, [userProfile?.preferredRoom]);
+
+  const handleFavoriteClick = async (room: SpaceKey) => {
+    if (!userProfile || isUpdatingFavorite || effectivePreferredRoom === room) {
+      return;
+    }
+
+    try {
+      setPendingFavorite(room);
+      setIsUpdatingFavorite(true);
+      await setDoc(
+        doc(db, "users", userProfile.uid),
+        { preferredRoom: room },
+        { merge: true },
+      );
+    } catch (error) {
+      setPendingFavorite(null);
+      const message = error instanceof Error ? error.message : "お気に入りの更新に失敗しました";
+      setErrorMessage(message);
+    } finally {
+      setIsUpdatingFavorite(false);
+    }
   };
 
   const openCommentModal = (reservation: ReservationRecord) => {
@@ -581,21 +599,45 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="flex gap-3">
-        {spaceOrder.map((spaceKey) => (
-          <button
-            key={spaceKey}
-            type="button"
-            onClick={() => setActiveSpace(spaceKey)}
-            className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-              activeSpace === spaceKey
-                ? "border-blue-500 bg-blue-500 text-white"
-                : "border-slate-200 bg-white text-slate-600 hover:border-blue-400 hover:text-blue-600"
-            }`}
-          >
-            {SPACES[spaceKey].label}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-end gap-3">
+        {spaceOrder.map((spaceKey) => {
+          const isActive = activeSpace === spaceKey;
+          const isFavorite = effectivePreferredRoom === spaceKey;
+
+          return (
+            <div key={spaceKey} className="relative flex flex-col items-center">
+              {isActive ? (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleFavoriteClick(spaceKey);
+                  }}
+                  disabled={isUpdatingFavorite || isFavorite}
+                  title={isFavorite ? "お気に入りに設定済み" : "お気に入りに設定"}
+                  className={`absolute -top-5 left-1/2 -translate-x-1/2 text-xl leading-none transition ${
+                    isFavorite ? "text-amber-400" : "text-slate-300 hover:text-amber-400"
+                  } ${isUpdatingFavorite ? "opacity-60" : ""} disabled:cursor-default`}
+                  aria-pressed={isFavorite}
+                  aria-label={`${SPACES[spaceKey].label} をお気に入りに設定`}
+                >
+                  <span aria-hidden="true">★</span>
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setActiveSpace(spaceKey)}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+                  isActive
+                    ? "border-blue-500 bg-blue-500 text-white"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-blue-400 hover:text-blue-600"
+                }`}
+              >
+                {SPACES[spaceKey].label}
+              </button>
+            </div>
+          );
+        })}
       </div>
 
       <div className="hidden overflow-x-auto sm:block">
