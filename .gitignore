@@ -17,6 +17,9 @@
 /.next/
 /out/
 /.firebase/
+.firebase/hosting*.cache
+.firebase/hosting.*
+.npm-cache/
 
 # production
 /build
