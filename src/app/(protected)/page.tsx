@@ -3,21 +3,30 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { ChatBubbleLeftEllipsisIcon } from "@heroicons/react/24/solid";
-import { SPACES, TIME_SLOTS, type SpaceKey, type TimeSlotKey } from "@/constants/schedule";
-import { addDays, formatDisplayDate, formatISODate, startOfWeek } from "@/utils/date";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebaseConfig";
+import { Avatar } from "@/components/common/Avatar";
 import {
+  DailyHighlightsSection,
+  type HighlightedUser,
+} from "@/components/schedule/DailyHighlightsSection";
+import { DesktopScheduleGrid } from "@/components/schedule/DesktopScheduleGrid";
+import { MobileScheduleGrid } from "@/components/schedule/MobileScheduleGrid";
+import { ReservationCommentModal } from "@/components/schedule/ReservationCommentModal";
+import { SpaceTabs } from "@/components/schedule/SpaceTabs";
+import type { ScheduleDate } from "@/components/schedule/types";
+import { SPACES, TIME_SLOTS, type SpaceKey, type TimeSlotKey } from "@/constants/schedule";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import {
+  clearReservationComment,
   reservationCellKey,
+  setReservationComment,
   subscribeReservationsByDateRange,
   toggleReservation,
-  setReservationComment,
-  clearReservationComment,
   type ReservationMap,
   type ReservationRecord,
 } from "@/services/reservations";
-import { useUserProfile } from "@/hooks/useUserProfile";
-import { Avatar } from "@/components/common/Avatar";
-import { doc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebaseConfig";
+import { addDays, formatDisplayDate, formatISODate, startOfWeek } from "@/utils/date";
 
 const heroIcon = {
   prev: <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />,
@@ -25,6 +34,7 @@ const heroIcon = {
 };
 
 const SPACE_DISPLAY_ORDER: SpaceKey[] = ["front", "back", "living"];
+type HighlightedUserWithDate = HighlightedUser & { date: string };
 
 function getInitial(name: string) {
   if (!name) return "?";
@@ -78,6 +88,11 @@ export default function Home() {
       };
     });
   }, [weekStartDate]);
+
+  const scheduleDates = useMemo<ScheduleDate[]>(
+    () => dates.map(({ iso, label }) => ({ iso, label })),
+    [dates],
+  );
 
   const effectivePreferredRoom = pendingFavorite ?? userProfile?.preferredRoom ?? null;
   const spaceOrder = SPACE_DISPLAY_ORDER;
@@ -224,17 +239,8 @@ export default function Home() {
     return (slotKey: TimeSlotKey) => map.get(slotKey) ?? slotKey;
   }, []);
 
-  const aggregateUsers = useMemo(() => {
-    const aggregate = new Map<
-      string,
-      {
-        userId: string;
-        userName: string;
-        userAvatarUrl: string;
-        reservations: ReservationRecord[];
-        date: string;
-      }
-    >();
+  const aggregateUsers = useMemo<HighlightedUserWithDate[]>(() => {
+    const aggregate = new Map<string, HighlightedUserWithDate>();
 
     Object.entries(reservations).forEach(([key, list]) => {
       if (!key.startsWith(`${todayIso}_`) && !key.startsWith(`${tomorrowIso}_`)) {
@@ -242,15 +248,19 @@ export default function Home() {
       }
       list.forEach((item) => {
         const aggregateKey = `${item.date}_${item.userId}`;
-        const existing = aggregate.get(aggregateKey) ?? {
+        const existing = aggregate.get(aggregateKey);
+        if (existing) {
+          existing.reservations.push(item);
+          return;
+        }
+
+        aggregate.set(aggregateKey, {
+          date: item.date,
           userId: item.userId,
           userName: item.userName,
           userAvatarUrl: item.userAvatarUrl ?? "",
-          reservations: [],
-          date: item.date,
-        };
-        existing.reservations.push(item);
-        aggregate.set(aggregateKey, existing);
+          reservations: [item],
+        });
       });
     });
 
@@ -267,34 +277,43 @@ export default function Home() {
       .sort((a, b) => a.userName.localeCompare(b.userName, "ja"));
   }, [reservations, todayIso, tomorrowIso, timeSlotOrder]);
 
-  const todaysUsers = useMemo(
-    () => aggregateUsers.filter((item) => item.date === todayIso),
+  const todaysUsers = useMemo<HighlightedUser[]>(
+    () =>
+      aggregateUsers
+        .filter((item) => item.date === todayIso)
+        .map((item) => {
+          const { date, ...rest } = item;
+          void date;
+          return rest;
+        }),
     [aggregateUsers, todayIso],
   );
-  const tomorrowsUsers = useMemo(
-    () => aggregateUsers.filter((item) => item.date === tomorrowIso),
+  const tomorrowsUsers = useMemo<HighlightedUser[]>(
+    () =>
+      aggregateUsers
+        .filter((item) => item.date === tomorrowIso)
+        .map((item) => {
+          const { date, ...rest } = item;
+          void date;
+          return rest;
+        }),
     [aggregateUsers, tomorrowIso],
   );
 
-  const selectedTodayUser = selectedTodayUserId
-    ? todaysUsers.find((user) => user.userId === selectedTodayUserId) ?? null
-    : null;
-
-  const selectedTomorrowUser = selectedTomorrowUserId
-    ? tomorrowsUsers.find((user) => user.userId === selectedTomorrowUserId) ?? null
-    : null;
-
   useEffect(() => {
-    if (selectedTodayUserId && !selectedTodayUser) {
+    if (selectedTodayUserId && !todaysUsers.some((user) => user.userId === selectedTodayUserId)) {
       setSelectedTodayUserId(null);
     }
-  }, [selectedTodayUserId, selectedTodayUser]);
+  }, [selectedTodayUserId, todaysUsers]);
 
   useEffect(() => {
-    if (selectedTomorrowUserId && !selectedTomorrowUser) {
+    if (
+      selectedTomorrowUserId &&
+      !tomorrowsUsers.some((user) => user.userId === selectedTomorrowUserId)
+    ) {
       setSelectedTomorrowUserId(null);
     }
-  }, [selectedTomorrowUserId, selectedTomorrowUser]);
+  }, [selectedTomorrowUserId, tomorrowsUsers]);
 
   const toggleSelectTodayUser = (userId: string) => {
     setSelectedTodayUserId((current) => (current === userId ? null : userId));
@@ -474,103 +493,27 @@ export default function Home() {
   return (
     <div className="space-y-6 sm:space-y-8">
       <section className="grid gap-3 sm:grid-cols-2 sm:flex-row sm:items-stretch">
-        <div className="rounded-xl border border-slate-200 bg-white/70 p-3 shadow-sm sm:flex sm:flex-col sm:justify-between">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <h2 className="text-sm font-semibold text-slate-700">今日</h2>
-            {todaysUsers.length === 0 ? (
-              <p className="text-sm text-slate-500">利用予定はありません。</p>
-            ) : (
-              todaysUsers.map((user) => (
-                <button
-                  key={user.userId}
-                  type="button"
-                  onClick={() => toggleSelectTodayUser(user.userId)}
-                  className={`relative rounded-full transition ${
-                    selectedTodayUserId === user.userId
-                      ? "ring-2 ring-blue-400"
-                      : "ring-1 ring-transparent hover:ring-blue-200"
-                  }`}
-                >
-                  <Avatar
-                    src={user.userAvatarUrl}
-                    fallback={getInitial(user.userName)}
-                    size={24}
-                    title={user.userName}
-                  />
-                </button>
-              ))
-            )}
-          </div>
-
-          {selectedTodayUser && (
-            <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2">
-              <p className="text-sm font-medium text-blue-900">
-                {selectedTodayUser.userName} の利用予定
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {selectedTodayUser.reservations.map((item) => (
-                  <span
-                    key={`${item.date}_${item.space}_${item.timeSlot}`}
-                    className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-medium text-blue-800 shadow"
-                  >
-                    <span>{SPACES[item.space].label}</span>
-                    <span className="text-blue-500">/</span>
-                    <span>{getTimeSlotShortLabel(item.timeSlot)}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white/70 p-3 shadow-sm sm:flex sm:flex-col sm:justify-center">
-          <div className="flex flex-wrap items-center gap-1.5 sm:flex-nowrap sm:gap-2">
-            <h2 className="text-sm font-semibold text-slate-700">明日</h2>
-            {tomorrowsUsers.length === 0 ? (
-              <p className="text-sm text-slate-500">利用予定はありません。</p>
-            ) : (
-              tomorrowsUsers.map((user) => (
-                <button
-                  key={user.userId}
-                  type="button"
-                  onClick={() => toggleSelectTomorrowUser(user.userId)}
-                  className={`relative rounded-full transition ${
-                    selectedTomorrowUserId === user.userId
-                      ? "ring-2 ring-blue-400"
-                      : "ring-1 ring-transparent hover:ring-blue-200"
-                  }`}
-                >
-                  <Avatar
-                    src={user.userAvatarUrl}
-                    fallback={getInitial(user.userName)}
-                    size={24}
-                    title={user.userName}
-                  />
-                </button>
-              ))
-            )}
-          </div>
-
-          {selectedTomorrowUser && (
-            <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2">
-              <p className="text-sm font-medium text-blue-900">
-                {selectedTomorrowUser.userName} の明日の利用予定
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {selectedTomorrowUser.reservations.map((item) => (
-                  <span
-                    key={`${item.date}_${item.space}_${item.timeSlot}`}
-                    className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-medium text-blue-800 shadow"
-                  >
-                    <span>{SPACES[item.space].label}</span>
-                    <span className="text-blue-500">/</span>
-                    <span>{getTimeSlotShortLabel(item.timeSlot)}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <DailyHighlightsSection
+          title="今日"
+          emptyMessage="利用予定はありません。"
+          highlightLabel="の利用予定"
+          users={todaysUsers}
+          selectedUserId={selectedTodayUserId}
+          onToggleSelect={toggleSelectTodayUser}
+          getInitial={getInitial}
+          getTimeSlotShortLabel={getTimeSlotShortLabel}
+        />
+        <DailyHighlightsSection
+          title="明日"
+          emptyMessage="利用予定はありません。"
+          highlightLabel="の明日の利用予定"
+          users={tomorrowsUsers}
+          selectedUserId={selectedTomorrowUserId}
+          onToggleSelect={toggleSelectTomorrowUser}
+          getInitial={getInitial}
+          getTimeSlotShortLabel={getTimeSlotShortLabel}
+          layout="center"
+        />
       </section>
 
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -599,192 +542,45 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="flex flex-wrap items-end gap-3">
-        {spaceOrder.map((spaceKey) => {
-          const isActive = activeSpace === spaceKey;
-          const isFavorite = effectivePreferredRoom === spaceKey;
+      <SpaceTabs
+        spaces={spaceOrder}
+        activeSpace={activeSpace}
+        preferredSpace={effectivePreferredRoom}
+        onSelect={setActiveSpace}
+        onFavoriteClick={handleFavoriteClick}
+        isFavoriteUpdating={isUpdatingFavorite}
+      />
 
-          return (
-            <div key={spaceKey} className="relative flex flex-col items-center">
-              {isActive ? (
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    handleFavoriteClick(spaceKey);
-                  }}
-                  disabled={isUpdatingFavorite || isFavorite}
-                  title={isFavorite ? "お気に入りに設定済み" : "お気に入りに設定"}
-                  className={`absolute -top-5 left-1/2 -translate-x-1/2 text-xl leading-none transition ${
-                    isFavorite ? "text-amber-400" : "text-slate-300 hover:text-amber-400"
-                  } ${isUpdatingFavorite ? "opacity-60" : ""} disabled:cursor-default`}
-                  aria-pressed={isFavorite}
-                  aria-label={`${SPACES[spaceKey].label} をお気に入りに設定`}
-                >
-                  <span aria-hidden="true">★</span>
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => setActiveSpace(spaceKey)}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                  isActive
-                    ? "border-blue-500 bg-blue-500 text-white"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-blue-400 hover:text-blue-600"
-                }`}
-              >
-                {SPACES[spaceKey].label}
-              </button>
-            </div>
-          );
-        })}
-      </div>
+      <DesktopScheduleGrid
+        dates={scheduleDates}
+        timeSlots={TIME_SLOTS}
+        isUpdating={isUpdating}
+        onBulkReserve={handleBulkReserve}
+        renderCell={renderCell}
+      />
 
-      <div className="hidden overflow-x-auto sm:block">
-        <div className="min-w-[640px] rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="grid grid-cols-[150px_repeat(7,_1fr)] border-b border-slate-100 bg-slate-100/40 text-sm font-medium text-slate-600">
-            <div className="flex items-center justify-center border-r border-slate-100 py-3">時間帯</div>
-            {dates.map((item) => (
-              <div key={item.iso} className="flex items-center justify-center border-r border-slate-100 py-3 last:border-r-0">
-                {item.label}
-              </div>
-            ))}
-          </div>
-          {TIME_SLOTS.map((slot) => (
-            <div
-              key={slot.key}
-              className="grid grid-cols-[150px_repeat(7,_1fr)] border-b border-slate-100 last:border-b-0"
-            >
-              <div className="flex flex-col items-center justify-center gap-3 border-r border-slate-100 bg-slate-50 px-4 py-5 text-sm font-medium text-slate-600">
-                <span className="block leading-tight whitespace-pre-line text-center">
-                  {slot.label.replace(/午後1/g, "午後１").replace(/午後2/g, "午後２")}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleBulkReserve(slot.key)}
-                  disabled={isUpdating}
-                  className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  月金利用
-                </button>
-              </div>
-              {dates.map((item) => (
-                <div
-                  key={`${item.iso}-${slot.key}`}
-                  className="border-r border-slate-100 px-2 py-2 last:border-r-0"
-                >
-                  {renderCell(item.iso, slot.key)}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="sm:hidden">
-        <div className="min-w-[360px] rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="grid grid-cols-[64px_repeat(4,_minmax(0,_1fr))] border-b border-slate-100 bg-slate-100/60 text-xs font-medium text-slate-600">
-            <div className="flex items-center justify-center border-r border-slate-100 py-1.5 text-slate-700">
-              日付
-            </div>
-            {TIME_SLOTS.map((slot) => (
-              <div
-                key={slot.key}
-                className="flex flex-col items-center justify-center gap-1 border-r border-slate-100 px-0.5 py-1 text-center last-border-r-0"
-              >
-                <span className="text-sm">
-                  {slot.label.split("\n")[0].replace(/午後1/g, "午後１").replace(/午後2/g, "午後２")}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleBulkReserve(slot.key)}
-                  disabled={isUpdating}
-                  className="rounded-full border border-slate-200 px-1 py-0.5 text-[10px] font-medium text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  月金
-                </button>
-              </div>
-            ))}
-          </div>
-          <div className="divide-y divide-slate-100 text-sm text-slate-700">
-            {dates.map((item) => (
-              <div key={item.iso} className="grid grid-cols-[64px_repeat(4,_minmax(0,_1fr))]">
-                <div className="flex items-center justify-center border-r border-slate-100 px-0.5 py-1 text-xs font-medium text-slate-700">
-                  <span className="text-left">{item.label.replace(/\s/g, "")}</span>
-                </div>
-                {TIME_SLOTS.map((slot) => (
-                  <div key={slot.key} className="border-r border-slate-100 px-0.5 py-1.5 last:border-r-0">
-                    {renderCell(item.iso, slot.key, { compact: true })}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <MobileScheduleGrid
+        dates={scheduleDates}
+        timeSlots={TIME_SLOTS}
+        isUpdating={isUpdating}
+        onBulkReserve={handleBulkReserve}
+        renderCell={renderCell}
+      />
       {errorMessage && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
           {errorMessage}
         </div>
       )}
 
-      {commentTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">{commentTarget.reservation.userName}</p>
-                <p className="text-xs text-slate-400">
-                  {commentTarget.reservation.date} / {SPACES[commentTarget.reservation.space].label}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={closeCommentModal}
-                className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:border-blue-300 hover:text-blue-600"
-              >
-                閉じる
-              </button>
-            </div>
-            {commentTarget.isOwner ? (
-              <div className="space-y-4">
-                <textarea
-                  value={commentDraft}
-                  onChange={(event) => setCommentDraft(event.target.value)}
-                  rows={4}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:outline-none"
-                  placeholder="コメントを入力してください"
-                  disabled={isCommentSaving}
-                />
-                <div className="flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={handleCommentDelete}
-                    disabled={isCommentSaving || !commentTarget.reservation.comment}
-                    className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-500 hover:border-red-300 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    コメント削除
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCommentSave}
-                    disabled={isCommentSaving}
-                    className="rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {isCommentSaving ? "保存中..." : "保存"}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                  {commentTarget.reservation.comment ?? "コメントはありません"}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <ReservationCommentModal
+        target={commentTarget}
+        commentDraft={commentDraft}
+        onChangeDraft={setCommentDraft}
+        onClose={closeCommentModal}
+        onSave={handleCommentSave}
+        onDelete={handleCommentDelete}
+        isSaving={isCommentSaving}
+      />
     </div>
   );
 }
