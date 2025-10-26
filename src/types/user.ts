@@ -6,6 +6,8 @@ export interface AppUser {
   uid: string;
   email: string;
   displayName: string;
+  nickname: string;
+  bio: string;
   photoURL: string;
   isAdmin: boolean;
   preferredRoom: SpaceKey | null;
@@ -16,4 +18,3 @@ export interface AppUser {
     weeklyUsageCount: number;
   };
 }
-

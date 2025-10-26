@@ -32,6 +32,8 @@ export function useUserProfile(): UseUserProfileResult {
           uid: user.uid,
           email: data.email ?? user.email ?? "",
           displayName: data.displayName ?? user.displayName ?? "",
+          nickname: data.nickname ?? data.displayName ?? user.displayName ?? "",
+          bio: data.bio ?? "",
           photoURL: data.photoURL ?? user.photoURL ?? "",
           isAdmin: data.isAdmin ?? false,
           preferredRoom: data.preferredRoom ?? null,

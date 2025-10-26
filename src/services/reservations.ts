@@ -115,7 +115,7 @@ export async function toggleReservation({
       space,
       timeSlot,
       userId: user.uid,
-      userName: user.displayName || user.email,
+      userName: user.nickname || user.displayName || user.email,
       userAvatarUrl: user.photoURL || "",
       comment: null,
       commentUpdatedAt: null,

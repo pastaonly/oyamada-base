@@ -50,3 +50,36 @@ export async function updateUserAvatar(file: File, user: AppUser) {
 
   return downloadURL;
 }
+
+export async function updateUserProfileDetails({
+  user,
+  nickname,
+  bio,
+}: {
+  user: AppUser;
+  nickname: string;
+  bio: string;
+}) {
+  const userRef = doc(db, "users", user.uid);
+  await setDoc(
+    userRef,
+    {
+      nickname,
+      bio,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+
+  const reservationsRef = collection(db, "reservations");
+  const q = query(reservationsRef, where("userId", "==", user.uid));
+  const snapshot = await getDocs(q);
+
+  if (!snapshot.empty) {
+    const batch = writeBatch(db);
+    snapshot.forEach((docSnap) => {
+      batch.update(docSnap.ref, { userName: nickname || user.displayName || user.email });
+    });
+    await batch.commit();
+  }
+}

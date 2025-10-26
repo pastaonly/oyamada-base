@@ -56,6 +56,8 @@ export default function LoginPage() {
         {
           ...commonProfileFields,
           photoURL: credential.user.photoURL ?? "",
+          nickname: credential.user.displayName ?? "",
+          bio: "",
           createdAt: serverTimestamp(),
           preferredRoom: null,
           memberType: null,
