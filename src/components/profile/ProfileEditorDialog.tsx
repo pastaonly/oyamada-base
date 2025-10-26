@@ -172,15 +172,7 @@ export function ProfileEditorDialog({ isOpen, onClose, user }: ProfileEditorDial
         onClick={handleDialogClick}
       >
         <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-white/95 px-6 py-4 backdrop-blur">
-          <div className="flex items-center gap-4">
-            <Avatar src={avatarSrc} fallback={displayName} size={56} title={displayName} />
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900">プロフィール編集</h2>
-              <p className="text-xs text-slate-500">
-                ニックネーム・自己紹介・プロフィール画像を更新できます。
-              </p>
-            </div>
-          </div>
+          <h2 className="text-lg font-semibold text-slate-900">プロフィール編集</h2>
           <div className="flex gap-2">
             <button
               type="button"
@@ -209,12 +201,11 @@ export function ProfileEditorDialog({ isOpen, onClose, user }: ProfileEditorDial
           className="flex-1 overflow-y-auto px-6 py-6"
         >
           <div className="grid gap-6 pb-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <Avatar src={avatarSrc} fallback={displayName} size={72} title={displayName} />
-              <div className="flex flex-col gap-2 text-sm text-slate-600">
-                <span>プロフィール画像（最大2MB）</span>
-                <div className="flex gap-2">
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
+              <Avatar src={avatarSrc} fallback={displayName} size={84} title={displayName} />
+              <div className="flex flex-col gap-3 text-sm text-slate-600">
+                <span className="font-medium text-slate-700">プロフィール画像（最大2MB）</span>
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={handleAvatarButtonClick}
@@ -247,7 +238,6 @@ export function ProfileEditorDialog({ isOpen, onClose, user }: ProfileEditorDial
                 />
               </div>
             </div>
-          </div>
           <label className="flex flex-col gap-2">
             <span className="text-sm font-medium text-slate-700">ニックネーム</span>
             <input
