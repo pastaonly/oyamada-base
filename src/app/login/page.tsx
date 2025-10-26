@@ -40,7 +40,7 @@ export default function LoginPage() {
     const userDocSnapshot = await getDoc(userDocRef);
     const isAdmin = ADMIN_EMAIL ? email === ADMIN_EMAIL : false;
 
-    const baseProfile = {
+    const commonProfileFields = {
       uid: credential.user.uid,
       email,
       displayName: credential.user.displayName ?? "",
@@ -50,13 +50,21 @@ export default function LoginPage() {
     };
 
     if (userDocSnapshot.exists()) {
-      await setDoc(userDocRef, baseProfile, { merge: true });
+      await setDoc(
+        userDocRef,
+        {
+          ...commonProfileFields,
+        },
+        { merge: true },
+      );
     } else {
       await setDoc(
         userDocRef,
         {
-          ...baseProfile,
+          ...commonProfileFields,
           createdAt: serverTimestamp(),
+          preferredRoom: null,
+          memberType: null,
           contributionSummary: {
             cleaningCount: 0,
             lastCleaningAt: null,

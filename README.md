@@ -42,10 +42,42 @@
   - ログイン時に `users/{uid}` ドキュメントを自動生成（存在しない場合）
   - `.env.local` の `NEXT_PUBLIC_ADMIN_EMAIL` と一致するメールアドレスに `isAdmin: true` を付与
 
+### 実装済み (Step 2)
+
+- 週間利用予定カレンダー (`src/app/(protected)/page.tsx`)
+  - 縦軸：時間帯（午前／午後1〈13:00-16:00〉／午後2〈16:00-19:00〉／夜）
+  - 横軸：曜日（日〜土）
+  - 部屋タブ：手前の部屋・奥の部屋・リビング（優先部屋設定がある場合は表示順を調整）
+  - 予約トグル：自分の予約は「○」、リビングは他会員が入ると灰色表示で操作不可
+  - 手前・奥の部屋は複数人予約可能（人数表示、他会員と重複して予約できます）
+  - 週送り：前週・次週ボタンで切り替え
+- Firestore 連携
+  - 予約データは `reservations` コレクションに `YYYY-MM-DD_space_slot[_uid]` 形式で保存（手前/奥は `uid` 付き）
+  - 週次で自動購読し、リアルタイムに UI へ反映
+
+### データモデル補足
+
+- `users/{uid}` ドキュメントには `preferredRoom`（`front` / `back` / `living` / null）を想定
+- `preRegisteredMembers/{email}` が存在するメールアドレスのみログイン可能
+- `reservations/{id}` ドキュメント例
+  ```json
+  {
+    "date": "2024-08-18",
+    "space": "front",
+    "timeSlot": "morning",
+    "userId": "UID",
+    "userName": "表示名",
+    "createdAt": <serverTimestamp>
+  }
+  ```
+
 ### 備考
 
 `npm run lint` で ESLint を実行できます。`functions/` ディレクトリ内の未使用コードについては Firebase Function 実装時に調整してください。
 
 ### Firestore セキュリティルール
 
-`firestore.rules` では `preRegisteredMembers` コレクションの読み取りのみを認証済みユーザに許可しています。他のコレクションは後続ステップでルールを拡張してください。
+`firestore.rules` では以下を許可しています。
+- `preRegisteredMembers`: 読み取りのみ（管理者が別途メンテナンス）
+- `users/{uid}`: 当人のみ読み書き可能
+- `reservations/{id}`: 全員が閲覧可能、自分の予約のみ作成・更新・削除可能
