@@ -445,9 +445,9 @@ export default function Home() {
   }
 
   return (
-    <div className="space-y-8">
-      <section className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white/70 p-3 shadow-sm">
+    <div className="space-y-6 sm:space-y-8">
+      <section className="grid gap-3 sm:grid-cols-2 sm:flex-row sm:items-stretch">
+        <div className="rounded-xl border border-slate-200 bg-white/70 p-3 shadow-sm sm:flex sm:flex-col sm:justify-between">
           <div className="flex flex-wrap items-center gap-1.5">
             <h2 className="text-sm font-semibold text-slate-700">今日</h2>
             {todaysUsers.length === 0 ? (
@@ -496,8 +496,8 @@ export default function Home() {
           )}
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white/70 p-3 shadow-sm">
-          <div className="flex flex-wrap items-center gap-1.5">
+        <div className="rounded-xl border border-slate-200 bg-white/70 p-3 shadow-sm sm:flex sm:flex-col sm:justify-center">
+          <div className="flex flex-wrap items-center gap-1.5 sm:flex-nowrap sm:gap-2">
             <h2 className="text-sm font-semibold text-slate-700">明日</h2>
             {tomorrowsUsers.length === 0 ? (
               <p className="text-sm text-slate-500">利用予定はありません。</p>
