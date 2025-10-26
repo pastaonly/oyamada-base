@@ -355,7 +355,12 @@ export default function Home() {
     }
   };
 
-  const renderCell = (isoDate: string, slotKey: TimeSlotKey) => {
+  const renderCell = (
+    isoDate: string,
+    slotKey: TimeSlotKey,
+    options?: { compact?: boolean },
+  ) => {
+    const compact = options?.compact ?? false;
     const cellKey = reservationCellKey(isoDate, activeSpace, slotKey);
     const slotReservations = reservations[cellKey] ?? [];
     const sortedReservations = [...slotReservations].sort((a, b) => {
@@ -369,7 +374,8 @@ export default function Home() {
     const isReservedByOther = !isSharedSpace && otherReservations.length > 0;
 
     const buttonClass = [
-      "flex h-14 w-full items-center justify-center rounded-md border transition",
+      "flex items-center justify-center rounded-md border transition",
+      compact ? "h-12 w-12 text-base" : "h-14 w-full",
       isMine
         ? "border-blue-500 bg-blue-100 text-blue-700"
         : isReservedByOther
@@ -393,7 +399,7 @@ export default function Home() {
     })();
 
     return (
-      <div className="flex flex-col items-center">
+      <div className={`flex flex-col items-center ${compact ? "gap-1" : ""}`}>
         <button
           type="button"
           disabled={(isReservedByOther && !isMine) || isUpdating}
@@ -403,7 +409,7 @@ export default function Home() {
           <span className="text-lg font-semibold">{label}</span>
         </button>
         {sortedReservations.length > 0 && (
-          <div className="mt-2 flex flex-wrap justify-center gap-2">
+          <div className={`flex flex-wrap justify-center gap-2 ${compact ? "" : "mt-2"}`}>
             {sortedReservations.map((item) => (
               <button
                 key={item.id}
@@ -414,12 +420,12 @@ export default function Home() {
                 <Avatar
                   src={item.userAvatarUrl ?? ""}
                   fallback={getInitial(item.userName)}
-                  size={32}
+                  size={compact ? 24 : 32}
                   title={item.userName}
                 />
                 {item.comment && (
-                  <span className="absolute -bottom-1 -right-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-white shadow-sm">
-                    <ChatBubbleLeftEllipsisIcon className="h-3 w-3" aria-hidden="true" />
+                  <span className="absolute -bottom-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-white shadow-sm">
+                    <ChatBubbleLeftEllipsisIcon className="h-2.5 w-2.5" aria-hidden="true" />
                   </span>
                 )}
               </button>
@@ -554,7 +560,7 @@ export default function Home() {
         ))}
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="hidden overflow-x-auto sm:block">
         <div className="min-w-[640px] rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="grid grid-cols-[150px_repeat(7,_1fr)] border-b border-slate-100 bg-slate-100/40 text-sm font-medium text-slate-600">
             <div className="flex items-center justify-center border-r border-slate-100 py-3">時間帯</div>
@@ -592,6 +598,40 @@ export default function Home() {
               ))}
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="sm:hidden">
+        <div className="min-w-[420px] rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="grid grid-cols-[72px_repeat(4,_minmax(0,_1fr))] border-b border-slate-100 bg-slate-100/60 text-xs font-medium text-slate-600">
+            <div className="flex items-center justify-center border-r border-slate-100 py-3 text-slate-700">
+              日付
+            </div>
+            {TIME_SLOTS.map((slot) => (
+              <div
+                key={slot.key}
+                className="flex items-center justify-center border-r border-slate-100 px-2 py-3 text-center last:border-r-0"
+              >
+                <span className="text-sm">
+                  {slot.label.split("\n")[0].replace(/午後1/g, "午後１").replace(/午後2/g, "午後２")}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="divide-y divide-slate-100 text-sm text-slate-700">
+            {dates.map((item) => (
+              <div key={item.iso} className="grid grid-cols-[72px_repeat(4,_minmax(0,_1fr))]">
+                <div className="flex items-center justify-center border-r border-slate-100 px-2 py-3 text-xs font-medium text-slate-700">
+                  <span className="text-left">{item.label.replace(/\s/g, "")}</span>
+                </div>
+                {TIME_SLOTS.map((slot) => (
+                  <div key={slot.key} className="border-r border-slate-100 px-1.5 py-2 last:border-r-0">
+                    {renderCell(item.iso, slot.key, { compact: true })}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
