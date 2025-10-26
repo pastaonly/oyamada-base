@@ -17,7 +17,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <UserProfileBadge />
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-6 py-10">{children}</main>
+      <main className="mx-auto max-w-6xl px-6 py-5 sm:py-10">{children}</main>
     </div>
   );
 }

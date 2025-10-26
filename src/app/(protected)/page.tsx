@@ -61,6 +61,7 @@ export default function Home() {
   const [commentDraft, setCommentDraft] = useState("");
   const [isCommentSaving, setIsCommentSaving] = useState(false);
   const [selectedTodayUserId, setSelectedTodayUserId] = useState<string | null>(null);
+  const [selectedTomorrowUserId, setSelectedTomorrowUserId] = useState<string | null>(null);
 
   const today = useMemo(() => {
     const now = new Date();
@@ -283,24 +284,32 @@ export default function Home() {
     [aggregateUsers, tomorrowIso],
   );
 
-  useEffect(() => {
-    if (selectedTodayUserId) {
-      const existsToday = todaysUsers.some((user) => user.userId === selectedTodayUserId);
-      if (!existsToday) {
-        setSelectedTodayUserId(null);
-      }
-    }
-  }, [todaysUsers, selectedTodayUserId]);
+  const selectedTodayUser = selectedTodayUserId
+    ? todaysUsers.find((user) => user.userId === selectedTodayUserId) ?? null
+    : null;
 
-  const selectedTodayUser = useMemo(() => {
-    if (!selectedTodayUserId) {
-      return null;
+  const selectedTomorrowUser = selectedTomorrowUserId
+    ? tomorrowsUsers.find((user) => user.userId === selectedTomorrowUserId) ?? null
+    : null;
+
+  useEffect(() => {
+    if (selectedTodayUserId && !selectedTodayUser) {
+      setSelectedTodayUserId(null);
     }
-    return todaysUsers.find((user) => user.userId === selectedTodayUserId) ?? null;
-  }, [selectedTodayUserId, todaysUsers]);
+  }, [selectedTodayUserId, selectedTodayUser]);
+
+  useEffect(() => {
+    if (selectedTomorrowUserId && !selectedTomorrowUser) {
+      setSelectedTomorrowUserId(null);
+    }
+  }, [selectedTomorrowUserId, selectedTomorrowUser]);
 
   const toggleSelectTodayUser = (userId: string) => {
     setSelectedTodayUserId((current) => (current === userId ? null : userId));
+  };
+
+  const toggleSelectTomorrowUser = (userId: string) => {
+    setSelectedTomorrowUserId((current) => (current === userId ? null : userId));
   };
 
   const openCommentModal = (reservation: ReservationRecord) => {
@@ -503,17 +512,46 @@ export default function Home() {
               <p className="text-sm text-slate-500">利用予定はありません。</p>
             ) : (
               tomorrowsUsers.map((user) => (
-                <span key={user.userId} className="rounded-full">
+                <button
+                  key={user.userId}
+                  type="button"
+                  onClick={() => toggleSelectTomorrowUser(user.userId)}
+                  className={`relative rounded-full transition ${
+                    selectedTomorrowUserId === user.userId
+                      ? "ring-2 ring-blue-400"
+                      : "ring-1 ring-transparent hover:ring-blue-200"
+                  }`}
+                >
                   <Avatar
                     src={user.userAvatarUrl}
                     fallback={getInitial(user.userName)}
                     size={24}
                     title={user.userName}
                   />
-                </span>
+                </button>
               ))
             )}
           </div>
+
+          {selectedTomorrowUser && (
+            <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2">
+              <p className="text-sm font-medium text-blue-900">
+                {selectedTomorrowUser.userName} の明日の利用予定
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {selectedTomorrowUser.reservations.map((item) => (
+                  <span
+                    key={`${item.date}_${item.space}_${item.timeSlot}`}
+                    className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-medium text-blue-800 shadow"
+                  >
+                    <span>{SPACES[item.space].label}</span>
+                    <span className="text-blue-500">/</span>
+                    <span>{getTimeSlotShortLabel(item.timeSlot)}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

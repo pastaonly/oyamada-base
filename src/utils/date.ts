@@ -16,11 +16,16 @@ export function addDays(base: Date, amount: number): Date {
 }
 
 export function formatISODate(date: Date): ISODateString {
-  return date.toISOString().split("T")[0] as ISODateString;
+  const tzDate = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+  const year = tzDate.getFullYear();
+  const month = String(tzDate.getMonth() + 1).padStart(2, "0");
+  const day = String(tzDate.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}` as ISODateString;
 }
 
 export function formatDisplayDate(date: Date): string {
   const formatter = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
     month: "numeric",
     day: "numeric",
     weekday: "short",
@@ -29,7 +34,8 @@ export function formatDisplayDate(date: Date): string {
 }
 
 export function formatJapaneseMonthDay(date: Date): string {
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
+  const tzDate = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+  const month = tzDate.getMonth() + 1;
+  const day = tzDate.getDate();
   return `${month}月${day}日`;
 }
