@@ -1,1 +1,0 @@
-# oyamada-base
