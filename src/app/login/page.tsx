@@ -8,10 +8,11 @@ import {
   signOut,
   UserCredential,
 } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebaseConfig";
 
 const PRE_REGISTERED_COLLECTION = "preRegisteredMembers";
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,11 +27,44 @@ export default function LoginPage() {
     }
 
     // 事前登録済みメールアドレス（管理者が Firestore 上で管理）を確認
-    const snapshot = await getDoc(doc(db, PRE_REGISTERED_COLLECTION, email));
+    const preRegisteredSnapshot = await getDoc(
+      doc(db, PRE_REGISTERED_COLLECTION, email),
+    );
 
-    if (!snapshot.exists()) {
+    if (!preRegisteredSnapshot.exists()) {
       await signOut(auth);
       throw new Error("このメールアドレスは登録されていません");
+    }
+
+    const userDocRef = doc(db, "users", credential.user.uid);
+    const userDocSnapshot = await getDoc(userDocRef);
+    const isAdmin = ADMIN_EMAIL ? email === ADMIN_EMAIL : false;
+
+    const baseProfile = {
+      uid: credential.user.uid,
+      email,
+      displayName: credential.user.displayName ?? "",
+      photoURL: credential.user.photoURL ?? "",
+      isAdmin,
+      updatedAt: serverTimestamp(),
+    };
+
+    if (userDocSnapshot.exists()) {
+      await setDoc(userDocRef, baseProfile, { merge: true });
+    } else {
+      await setDoc(
+        userDocRef,
+        {
+          ...baseProfile,
+          createdAt: serverTimestamp(),
+          contributionSummary: {
+            cleaningCount: 0,
+            lastCleaningAt: null,
+            weeklyUsageCount: 0,
+          },
+        },
+        { merge: true },
+      );
     }
 
     router.push("/");

@@ -25,7 +25,7 @@
    npm run dev
    ```
 
-5. ブラウザで [http://localhost:3000/login](http://localhost:3000/login) を開き、Google ログインボタンから認証を確認してください。
+5. ブラウザで [http://localhost:3000/login](http://localhost:3000/login) を開き、Google ログインボタンから認証を確認してください。正常にログインすると `/`（ホーム）へ遷移します。
 
 ### 実装済み (Step 1)
 
@@ -35,7 +35,17 @@
   - Google ログインボタン
   - 事前登録が無いメールアドレスでログインした際の警告表示
   - 認証成功時は `/` に遷移
+- 認証状態管理
+  - `AuthProvider` でグローバルにログイン状態を監視
+  - `ProtectedRoute` によりログイン済みユーザのみ `/` を閲覧可能
+- Firestore 初期登録
+  - ログイン時に `users/{uid}` ドキュメントを自動生成（存在しない場合）
+  - `.env.local` の `NEXT_PUBLIC_ADMIN_EMAIL` と一致するメールアドレスに `isAdmin: true` を付与
 
 ### 備考
 
 `npm run lint` で ESLint を実行できます。`functions/` ディレクトリ内の未使用コードについては Firebase Function 実装時に調整してください。
+
+### Firestore セキュリティルール
+
+`firestore.rules` では `preRegisteredMembers` コレクションの読み取りのみを認証済みユーザに許可しています。他のコレクションは後続ステップでルールを拡張してください。
