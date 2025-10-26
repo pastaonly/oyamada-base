@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { ChatBubbleLeftEllipsisIcon } from "@heroicons/react/24/solid";
-import { doc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebaseConfig";
 import { Avatar } from "@/components/common/Avatar";
 import {
   DailyHighlightsSection,
@@ -61,9 +59,6 @@ export default function Home() {
   const [isCommentSaving, setIsCommentSaving] = useState(false);
   const [selectedTodayUserId, setSelectedTodayUserId] = useState<string | null>(null);
   const [selectedTomorrowUserId, setSelectedTomorrowUserId] = useState<string | null>(null);
-  const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false);
-  const [pendingFavorite, setPendingFavorite] = useState<SpaceKey | null>(null);
-
   const today = useMemo(() => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
@@ -94,14 +89,7 @@ export default function Home() {
     [dates],
   );
 
-  const effectivePreferredRoom = pendingFavorite ?? userProfile?.preferredRoom ?? null;
   const spaceOrder = SPACE_DISPLAY_ORDER;
-
-  useEffect(() => {
-    if (effectivePreferredRoom) {
-      setActiveSpace(effectivePreferredRoom);
-    }
-  }, [effectivePreferredRoom]);
 
   useEffect(() => {
     if (dates.length === 0) {
@@ -323,32 +311,6 @@ export default function Home() {
     setSelectedTomorrowUserId((current) => (current === userId ? null : userId));
   };
 
-  useEffect(() => {
-    setPendingFavorite(null);
-  }, [userProfile?.preferredRoom]);
-
-  const handleFavoriteClick = async (room: SpaceKey) => {
-    if (!userProfile || isUpdatingFavorite || effectivePreferredRoom === room) {
-      return;
-    }
-
-    try {
-      setPendingFavorite(room);
-      setIsUpdatingFavorite(true);
-      await setDoc(
-        doc(db, "users", userProfile.uid),
-        { preferredRoom: room },
-        { merge: true },
-      );
-    } catch (error) {
-      setPendingFavorite(null);
-      const message = error instanceof Error ? error.message : "お気に入りの更新に失敗しました";
-      setErrorMessage(message);
-    } finally {
-      setIsUpdatingFavorite(false);
-    }
-  };
-
   const openCommentModal = (reservation: ReservationRecord) => {
     const isOwner = reservation.userId === userProfile?.uid;
     setCommentTarget({ reservation, isOwner });
@@ -545,10 +507,7 @@ export default function Home() {
       <SpaceTabs
         spaces={spaceOrder}
         activeSpace={activeSpace}
-        preferredSpace={effectivePreferredRoom}
         onSelect={setActiveSpace}
-        onFavoriteClick={handleFavoriteClick}
-        isFavoriteUpdating={isUpdatingFavorite}
       />
 
       <DesktopScheduleGrid

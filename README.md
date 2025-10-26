@@ -85,7 +85,7 @@
 ### Firestore セキュリティルール
 
 `firestore.rules` では以下を許可しています。
-- `memberContracts`: 読み取りのみ（管理者が別途メンテナンス）
+- `memberContracts`: 全ユーザが読み取り可、管理者のみ編集可
 - `users/{uid}`: 当人のみ読み書き可能
 - `reservations/{id}`: 全員が閲覧可能、自分の予約のみ作成・更新・削除可能
 

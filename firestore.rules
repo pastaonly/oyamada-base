@@ -4,12 +4,12 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /memberContracts/{email} {
       allow read: if request.auth != null;
-      allow write: if false;
+      allow write: if request.auth != null && request.auth.token.admin == true;
     }
 
     match /users/{userId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && (request.auth.uid == userId || request.auth.token.admin == true);
     }
 
     match /reservations/{reservationId} {
