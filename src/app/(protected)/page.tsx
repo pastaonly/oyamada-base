@@ -60,6 +60,21 @@ export default function Home() {
   >(null);
   const [commentDraft, setCommentDraft] = useState("");
   const [isCommentSaving, setIsCommentSaving] = useState(false);
+  const [selectedTodayUserId, setSelectedTodayUserId] = useState<string | null>(null);
+
+  const today = useMemo(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return now;
+  }, []);
+
+  const todayIso = useMemo(() => formatISODate(today), [today]);
+  const tomorrow = useMemo(() => {
+    const next = addDays(today, 1);
+    next.setHours(0, 0, 0, 0);
+    return next;
+  }, [today]);
+  const tomorrowIso = useMemo(() => formatISODate(tomorrow), [tomorrow]);
 
   const dates = useMemo(() => {
     return Array.from({ length: 7 }, (_, index) => {
@@ -81,17 +96,27 @@ export default function Home() {
   }, [spaceOrder]);
 
   useEffect(() => {
-    const startIso = dates[0]?.iso;
-    const endIso = dates[dates.length - 1]?.iso;
-
-    if (!startIso || !endIso) {
+    if (dates.length === 0) {
       return;
     }
+
+    const weekStartDateObj = dates[0]?.date ?? today;
+    const weekEndDateObj = dates[dates.length - 1]?.date ?? today;
+
+    const startDate = [weekStartDateObj, today, tomorrow].reduce((min, current) =>
+      current < min ? current : min,
+    );
+    const endDate = [weekEndDateObj, today, tomorrow].reduce((max, current) =>
+      current > max ? current : max,
+    );
+
+    const startIso = formatISODate(startDate);
+    const endIso = formatISODate(endDate);
 
     const unsubscribe = subscribeReservationsByDateRange(startIso, endIso, setReservations);
 
     return () => unsubscribe();
-  }, [dates]);
+  }, [dates, today, tomorrow]);
 
   const handleBulkReserve = async (slotKey: TimeSlotKey) => {
     if (!userProfile) {
@@ -190,6 +215,92 @@ export default function Home() {
   const changeWeek = (offset: number) => {
     const newDate = addDays(weekStartDate, offset * 7);
     setWeekStartDate(startOfWeek(newDate));
+  };
+
+  const timeSlotOrder = useMemo(() => {
+    const entries = TIME_SLOTS.map((slot, index) => [slot.key, index] as const);
+    return Object.fromEntries(entries) as Record<TimeSlotKey, number>;
+  }, []);
+
+  const getTimeSlotShortLabel = useMemo(() => {
+    const map = new Map<TimeSlotKey, string>();
+    TIME_SLOTS.forEach((slot) => {
+      const [firstLine] = slot.label.split("\n");
+      map.set(slot.key, firstLine);
+    });
+    return (slotKey: TimeSlotKey) => map.get(slotKey) ?? slotKey;
+  }, []);
+
+  const aggregateUsers = useMemo(() => {
+    const aggregate = new Map<
+      string,
+      {
+        userId: string;
+        userName: string;
+        userAvatarUrl: string;
+        reservations: ReservationRecord[];
+        date: string;
+      }
+    >();
+
+    Object.entries(reservations).forEach(([key, list]) => {
+      if (!key.startsWith(`${todayIso}_`) && !key.startsWith(`${tomorrowIso}_`)) {
+        return;
+      }
+      list.forEach((item) => {
+        const aggregateKey = `${item.date}_${item.userId}`;
+        const existing = aggregate.get(aggregateKey) ?? {
+          userId: item.userId,
+          userName: item.userName,
+          userAvatarUrl: item.userAvatarUrl ?? "",
+          reservations: [],
+          date: item.date,
+        };
+        existing.reservations.push(item);
+        aggregate.set(aggregateKey, existing);
+      });
+    });
+
+    return Array.from(aggregate.values())
+      .map((entry) => ({
+        ...entry,
+        reservations: entry.reservations.sort((a, b) => {
+          if (a.space !== b.space) {
+            return SPACES[a.space].label.localeCompare(SPACES[b.space].label, "ja");
+          }
+          return timeSlotOrder[a.timeSlot] - timeSlotOrder[b.timeSlot];
+        }),
+      }))
+      .sort((a, b) => a.userName.localeCompare(b.userName, "ja"));
+  }, [reservations, todayIso, tomorrowIso, timeSlotOrder]);
+
+  const todaysUsers = useMemo(
+    () => aggregateUsers.filter((item) => item.date === todayIso),
+    [aggregateUsers, todayIso],
+  );
+  const tomorrowsUsers = useMemo(
+    () => aggregateUsers.filter((item) => item.date === tomorrowIso),
+    [aggregateUsers, tomorrowIso],
+  );
+
+  useEffect(() => {
+    if (selectedTodayUserId) {
+      const existsToday = todaysUsers.some((user) => user.userId === selectedTodayUserId);
+      if (!existsToday) {
+        setSelectedTodayUserId(null);
+      }
+    }
+  }, [todaysUsers, selectedTodayUserId]);
+
+  const selectedTodayUser = useMemo(() => {
+    if (!selectedTodayUserId) {
+      return null;
+    }
+    return todaysUsers.find((user) => user.userId === selectedTodayUserId) ?? null;
+  }, [selectedTodayUserId, todaysUsers]);
+
+  const toggleSelectTodayUser = (userId: string) => {
+    setSelectedTodayUserId((current) => (current === userId ? null : userId));
   };
 
   const openCommentModal = (reservation: ReservationRecord) => {
@@ -329,6 +440,77 @@ export default function Home() {
 
   return (
     <div className="space-y-8">
+      <section className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-slate-200 bg-white/70 p-3 shadow-sm">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <h2 className="text-sm font-semibold text-slate-700">今日</h2>
+            {todaysUsers.length === 0 ? (
+              <p className="text-sm text-slate-500">利用予定はありません。</p>
+            ) : (
+              todaysUsers.map((user) => (
+                <button
+                  key={user.userId}
+                  type="button"
+                  onClick={() => toggleSelectTodayUser(user.userId)}
+                  className={`relative rounded-full transition ${
+                    selectedTodayUserId === user.userId
+                      ? "ring-2 ring-blue-400"
+                      : "ring-1 ring-transparent hover:ring-blue-200"
+                  }`}
+                >
+                  <Avatar
+                    src={user.userAvatarUrl}
+                    fallback={getInitial(user.userName)}
+                    size={24}
+                    title={user.userName}
+                  />
+                </button>
+              ))
+            )}
+          </div>
+
+          {selectedTodayUser && (
+            <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2">
+              <p className="text-sm font-medium text-blue-900">
+                {selectedTodayUser.userName} の利用予定
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {selectedTodayUser.reservations.map((item) => (
+                  <span
+                    key={`${item.date}_${item.space}_${item.timeSlot}`}
+                    className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-medium text-blue-800 shadow"
+                  >
+                    <span>{SPACES[item.space].label}</span>
+                    <span className="text-blue-500">/</span>
+                    <span>{getTimeSlotShortLabel(item.timeSlot)}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white/70 p-3 shadow-sm">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <h2 className="text-sm font-semibold text-slate-700">明日</h2>
+            {tomorrowsUsers.length === 0 ? (
+              <p className="text-sm text-slate-500">利用予定はありません。</p>
+            ) : (
+              tomorrowsUsers.map((user) => (
+                <span key={user.userId} className="rounded-full">
+                  <Avatar
+                    src={user.userAvatarUrl}
+                    fallback={getInitial(user.userName)}
+                    size={24}
+                    title={user.userName}
+                  />
+                </span>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900">利用予定</h2>
