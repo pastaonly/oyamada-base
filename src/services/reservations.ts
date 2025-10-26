@@ -1,11 +1,13 @@
 import {
   collection,
+  deleteField,
   doc,
   onSnapshot,
   orderBy,
   query,
   runTransaction,
   serverTimestamp,
+  setDoc,
   where,
   type Unsubscribe,
 } from "firebase/firestore";
@@ -21,6 +23,8 @@ export type ReservationRecord = {
   userId: string;
   userName: string;
   userAvatarUrl?: string;
+  comment?: string;
+  commentUpdatedAt?: unknown;
   createdAt: unknown;
 };
 
@@ -113,8 +117,40 @@ export async function toggleReservation({
       userId: user.uid,
       userName: user.displayName || user.email,
       userAvatarUrl: user.photoURL || "",
+      comment: null,
+      commentUpdatedAt: null,
       createdAt: serverTimestamp(),
     });
     return "created";
   });
+}
+
+export async function setReservationComment({
+  reservationId,
+  comment,
+}: {
+  reservationId: string;
+  comment: string;
+}) {
+  const reservationRef = doc(db, "reservations", reservationId);
+  await setDoc(
+    reservationRef,
+    {
+      comment,
+      commentUpdatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+}
+
+export async function clearReservationComment(reservationId: string) {
+  const reservationRef = doc(db, "reservations", reservationId);
+  await setDoc(
+    reservationRef,
+    {
+      comment: deleteField(),
+      commentUpdatedAt: deleteField(),
+    },
+    { merge: true },
+  );
 }
