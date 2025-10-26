@@ -162,16 +162,16 @@ export function ProfileEditorDialog({ isOpen, onClose, user }: ProfileEditorDial
   const avatarSrc = previewUrl ?? user.photoURL ?? undefined;
   const dialog = (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 px-4 py-8"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 px-4 py-6 sm:py-8"
       role="dialog"
       aria-modal="true"
       onClick={handleClose}
     >
       <div
-        className="flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
         onClick={handleDialogClick}
       >
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
+        <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-white/95 px-6 py-4 backdrop-blur">
           <div className="flex items-center gap-4">
             <Avatar src={avatarSrc} fallback={displayName} size={56} title={displayName} />
             <div>
@@ -206,8 +206,9 @@ export function ProfileEditorDialog({ isOpen, onClose, user }: ProfileEditorDial
         <form
           id="profile-editor-form"
           onSubmit={handleSubmit}
-          className="grid gap-6 border-b border-slate-100 px-6 py-6"
+          className="flex-1 overflow-y-auto px-6 py-6"
         >
+          <div className="grid gap-6 pb-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <Avatar src={avatarSrc} fallback={displayName} size={72} title={displayName} />
@@ -276,10 +277,11 @@ export function ProfileEditorDialog({ isOpen, onClose, user }: ProfileEditorDial
             </span>
           </label>
           {errorMessage && <p className="text-sm font-medium text-red-600">{errorMessage}</p>}
+          </div>
         </form>
-        <div className="grid flex-1 gap-4 overflow-y-auto p-6">
+        <div className="grid gap-4 border-t border-slate-100 bg-slate-50/40 px-6 py-5 text-sm text-slate-700">
           <h3 className="text-sm font-semibold text-slate-700">プレビュー</h3>
-          <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 text-sm text-slate-700">
+          <div className="max-h-64 overflow-y-auto rounded-2xl border border-slate-100 bg-slate-50/60 p-4 text-sm text-slate-700">
             <MarkdownContent content={previewContent} />
           </div>
         </div>
