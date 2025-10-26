@@ -80,6 +80,73 @@ export default function Home() {
     return () => unsubscribe();
   }, [dates]);
 
+  const handleBulkReserve = async (slotKey: TimeSlotKey) => {
+    if (!userProfile) {
+      return;
+    }
+
+    setIsUpdating(true);
+    setErrorMessage(null);
+
+    try {
+      const weekdays = dates.slice(0, 5); // Monday - Friday
+
+      let blockedCount = 0;
+
+      const tasks = weekdays.map(async (day) => {
+        const cellKey = reservationCellKey(day.iso, activeSpace, slotKey);
+        const slotReservations = reservations[cellKey] ?? [];
+        const isMine = slotReservations.some((item) => item.userId === userProfile.uid);
+        const hasOther = slotReservations.some((item) => item.userId !== userProfile.uid);
+        const isSharedSpace = activeSpace === "front" || activeSpace === "back";
+
+        // If already reserved by user -> remove reservation
+        if (isMine) {
+          const result = await toggleReservation({
+            date: day.iso,
+            space: activeSpace,
+            timeSlot: slotKey,
+            user: userProfile,
+          });
+
+          if (result === "blocked") {
+            blockedCount += 1;
+          }
+
+          return;
+        }
+
+        // If space is exclusive and another user has booked, skip
+        if (!isSharedSpace && hasOther) {
+          blockedCount += 1;
+          return;
+        }
+
+        const result = await toggleReservation({
+          date: day.iso,
+          space: activeSpace,
+          timeSlot: slotKey,
+          user: userProfile,
+        });
+
+        if (result === "blocked") {
+          blockedCount += 1;
+        }
+      });
+
+      await Promise.all(tasks);
+
+      if (blockedCount > 0) {
+        setErrorMessage("一部の枠は他会員が予約済みのためスキップしました");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "月〜金の予約に失敗しました";
+      setErrorMessage(message);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleToggle = async (isoDate: string, timeSlot: TimeSlotKey) => {
     if (!userProfile) {
       return;
@@ -244,10 +311,18 @@ export default function Home() {
               key={slot.key}
               className="grid grid-cols-[150px_repeat(7,_1fr)] border-b border-slate-100 last:border-b-0"
             >
-              <div className="flex items-center justify-center border-r border-slate-100 bg-slate-50 px-4 py-5 text-sm font-medium text-slate-600">
+              <div className="flex flex-col items-center justify-center gap-3 border-r border-slate-100 bg-slate-50 px-4 py-5 text-sm font-medium text-slate-600">
                 <span className="block leading-tight whitespace-pre-line text-center">
                   {slot.label.replace(/午後1/g, "午後１").replace(/午後2/g, "午後２")}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => handleBulkReserve(slot.key)}
+                  disabled={isUpdating}
+                  className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition hover:border-blue-400 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  月金利用
+                </button>
               </div>
               {dates.map((item) => (
                 <div
