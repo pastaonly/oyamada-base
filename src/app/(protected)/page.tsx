@@ -89,7 +89,7 @@ export default function Home() {
     });
   }, [weekStartDate]);
 
-  const scheduleDates = useMemo<ScheduleDate[]>(
+  const scheduleDates = useMemo<ReadonlyArray<ScheduleDate>>(
     () => dates.map(({ iso, label }) => ({ iso, label })),
     [dates],
   );

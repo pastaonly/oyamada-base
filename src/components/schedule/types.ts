@@ -11,3 +11,5 @@ export type RenderCell = (
   slotKey: TimeSlotKey,
   options?: { compact?: boolean },
 ) => ReactNode;
+
+export type ReadonlyScheduleDates = ReadonlyArray<ScheduleDate>;

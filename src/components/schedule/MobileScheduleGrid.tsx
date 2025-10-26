@@ -1,7 +1,7 @@
 'use client';
 
 import type { TimeSlotKey } from "@/constants/schedule";
-import type { RenderCell, ScheduleDate } from "./types";
+import type { ReadonlyScheduleDates, RenderCell } from "./types";
 
 type TimeSlot = {
   key: TimeSlotKey;
@@ -9,8 +9,8 @@ type TimeSlot = {
 };
 
 type MobileScheduleGridProps = {
-  dates: ScheduleDate[];
-  timeSlots: TimeSlot[];
+  dates: ReadonlyScheduleDates;
+  timeSlots: ReadonlyArray<TimeSlot>;
   isUpdating: boolean;
   onBulkReserve: (slot: TimeSlotKey) => void;
   renderCell: RenderCell;
