@@ -3,6 +3,12 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
+  "storage": [
+    {
+      "bucket": "oyamadai-base.firebasestorage.app",
+      "rules": "storage.rules"
+    }
+  ],
   "hosting": {
     "source": "hosting",
     "ignore": [

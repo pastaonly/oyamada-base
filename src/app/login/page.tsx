@@ -44,24 +44,18 @@ export default function LoginPage() {
       uid: credential.user.uid,
       email,
       displayName: credential.user.displayName ?? "",
-      photoURL: credential.user.photoURL ?? "",
       isAdmin,
       updatedAt: serverTimestamp(),
     };
 
     if (userDocSnapshot.exists()) {
-      await setDoc(
-        userDocRef,
-        {
-          ...commonProfileFields,
-        },
-        { merge: true },
-      );
+      await setDoc(userDocRef, commonProfileFields, { merge: true });
     } else {
       await setDoc(
         userDocRef,
         {
           ...commonProfileFields,
+          photoURL: credential.user.photoURL ?? "",
           createdAt: serverTimestamp(),
           preferredRoom: null,
           memberType: null,

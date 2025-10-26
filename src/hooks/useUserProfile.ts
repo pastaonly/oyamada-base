@@ -27,10 +27,20 @@ export function useUserProfile(): UseUserProfileResult {
 
     const unsubscribe = onSnapshot(doc(db, "users", user.uid), (snapshot) => {
       if (snapshot.exists()) {
-        const data = snapshot.data() as AppUser;
+        const data = snapshot.data() as Partial<AppUser>;
         setUserProfile({
-          ...data,
           uid: user.uid,
+          email: data.email ?? user.email ?? "",
+          displayName: data.displayName ?? user.displayName ?? "",
+          photoURL: data.photoURL ?? user.photoURL ?? "",
+          isAdmin: data.isAdmin ?? false,
+          preferredRoom: data.preferredRoom ?? null,
+          memberType: data.memberType ?? null,
+          contributionSummary: {
+            cleaningCount: data.contributionSummary?.cleaningCount ?? 0,
+            lastCleaningAt: data.contributionSummary?.lastCleaningAt ?? null,
+            weeklyUsageCount: data.contributionSummary?.weeklyUsageCount ?? 0,
+          },
         });
       }
       setIsLoading(false);

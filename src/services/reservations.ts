@@ -20,6 +20,7 @@ export type ReservationRecord = {
   timeSlot: TimeSlotKey;
   userId: string;
   userName: string;
+  userAvatarUrl?: string;
   createdAt: unknown;
 };
 
@@ -111,6 +112,7 @@ export async function toggleReservation({
       timeSlot,
       userId: user.uid,
       userName: user.displayName || user.email,
+      userAvatarUrl: user.photoURL || "",
       createdAt: serverTimestamp(),
     });
     return "created";

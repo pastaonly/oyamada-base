@@ -11,14 +11,11 @@ import {
   type ReservationMap,
 } from "@/services/reservations";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { Avatar } from "@/components/common/Avatar";
 
 const heroIcon = {
-  prev: (
-    <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
-  ),
-  next: (
-    <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
-  ),
+  prev: <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />,
+  next: <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />,
 };
 
 function buildSpaceOrder(preferredRoom: SpaceKey | null): SpaceKey[] {
@@ -34,6 +31,13 @@ function buildSpaceOrder(preferredRoom: SpaceKey | null): SpaceKey[] {
 
   const others = defaultOrder.filter((space) => space !== preferredRoom && space !== "living");
   return [preferredRoom, "living", ...others];
+}
+
+function getInitial(name: string) {
+  if (!name) return "?";
+  const trimmed = name.trim();
+  if (!trimmed) return "?";
+  return trimmed.slice(0, 1).toUpperCase();
 }
 
 export default function Home() {
@@ -111,6 +115,11 @@ export default function Home() {
   const renderCell = (isoDate: string, slotKey: TimeSlotKey) => {
     const cellKey = reservationCellKey(isoDate, activeSpace, slotKey);
     const slotReservations = reservations[cellKey] ?? [];
+    const sortedReservations = [...slotReservations].sort((a, b) => {
+      const aIsMine = a.userId === userProfile?.uid ? 1 : 0;
+      const bIsMine = b.userId === userProfile?.uid ? 1 : 0;
+      return bIsMine - aIsMine;
+    });
     const isMine = slotReservations.some((item) => item.userId === userProfile?.uid);
     const otherReservations = slotReservations.filter((item) => item.userId !== userProfile?.uid);
     const isSharedSpace = activeSpace === "front" || activeSpace === "back";
@@ -150,12 +159,18 @@ export default function Home() {
         >
           <span className="text-lg font-semibold">{label}</span>
         </button>
-        {slotReservations.length > 0 && (
-          <p className="mt-2 max-w-[110px] truncate text-center text-xs text-slate-400">
-            {slotReservations
-              .map((item) => (item.userId === userProfile?.uid ? "あなた" : item.userName))
-              .join(", ")}
-          </p>
+        {sortedReservations.length > 0 && (
+          <div className="mt-2 flex flex-wrap justify-center gap-2">
+            {sortedReservations.map((item) => (
+              <Avatar
+                key={item.id}
+                src={item.userAvatarUrl ?? ""}
+                fallback={getInitial(item.userName)}
+                size={32}
+                title={item.userName}
+              />
+            ))}
+          </div>
         )}
       </div>
     );
@@ -163,99 +178,97 @@ export default function Home() {
 
   if (isLoading || !userProfile) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-600">
+      <div className="flex min-h-[200px] items-center justify-center text-slate-600">
         読み込み中...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto max-w-5xl">
-        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">利用予定</h1>
-            <p className="text-sm text-slate-500">時間帯をタップして予約を切り替えます。</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => changeWeek(-1)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:border-blue-400 hover:text-blue-600"
-            >
-              {heroIcon.prev}
-            </button>
-            <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700">
-              {`${dates[0]?.label ?? ""} 〜 ${dates[dates.length - 1]?.label ?? ""}`}
-            </div>
-            <button
-              type="button"
-              onClick={() => changeWeek(1)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:border-blue-400 hover:text-blue-600"
-            >
-              {heroIcon.next}
-            </button>
-          </div>
-        </header>
-
-        <div className="mb-6 flex gap-3">
-          {spaceOrder.map((spaceKey) => (
-            <button
-              key={spaceKey}
-              type="button"
-              onClick={() => setActiveSpace(spaceKey)}
-              className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                activeSpace === spaceKey
-                  ? "border-blue-500 bg-blue-500 text-white"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-blue-400 hover:text-blue-600"
-              }`}
-            >
-              {SPACES[spaceKey].label}
-            </button>
-          ))}
+    <div className="space-y-8">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-slate-900">利用予定</h2>
+          <p className="text-sm text-slate-500">時間帯をタップして予約を切り替えます。</p>
         </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => changeWeek(-1)}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-blue-400 hover:text-blue-600"
+          >
+            {heroIcon.prev}
+          </button>
+          <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700">
+            {`${dates[0]?.label ?? ""} 〜 ${dates[dates.length - 1]?.label ?? ""}`}
+          </div>
+          <button
+            type="button"
+            onClick={() => changeWeek(1)}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-blue-400 hover:text-blue-600"
+          >
+            {heroIcon.next}
+          </button>
+        </div>
+      </header>
 
-        <div className="overflow-x-auto">
-          <div className="min-w-[640px] rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="grid grid-cols-[150px_repeat(7,_1fr)] border-b border-slate-100 bg-slate-100/40 text-sm font-medium text-slate-600">
-              <div className="flex items-center justify-center border-r border-slate-100 py-3">時間帯</div>
-              {dates.map((item) => (
-                <div key={item.iso} className="flex items-center justify-center border-r border-slate-100 py-3 last:border-r-0">
-                  {item.label}
-                </div>
-              ))}
-            </div>
-            {TIME_SLOTS.map((slot) => (
-              <div
-                key={slot.key}
-                className="grid grid-cols-[150px_repeat(7,_1fr)] border-b border-slate-100 last:border-b-0"
-              >
-                <div className="flex items-center justify-center border-r border-slate-100 bg-slate-50 px-4 py-5 text-sm font-medium text-slate-600">
-                  {slot.label.split("\n").map((line) => (
-                    <span key={line} className="block leading-tight">
-                      {line}
-                    </span>
-                  ))}
-                </div>
-                {dates.map((item) => (
-                  <div
-                    key={`${item.iso}-${slot.key}`}
-                    className="border-r border-slate-100 px-2 py-2 last:border-r-0"
-                  >
-                    {renderCell(item.iso, slot.key)}
-                  </div>
-                ))}
+      <div className="flex gap-3">
+        {spaceOrder.map((spaceKey) => (
+          <button
+            key={spaceKey}
+            type="button"
+            onClick={() => setActiveSpace(spaceKey)}
+            className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+              activeSpace === spaceKey
+                ? "border-blue-500 bg-blue-500 text-white"
+                : "border-slate-200 bg-white text-slate-600 hover:border-blue-400 hover:text-blue-600"
+            }`}
+          >
+            {SPACES[spaceKey].label}
+          </button>
+        ))}
+      </div>
+
+      <div className="overflow-x-auto">
+        <div className="min-w-[640px] rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="grid grid-cols-[150px_repeat(7,_1fr)] border-b border-slate-100 bg-slate-100/40 text-sm font-medium text-slate-600">
+            <div className="flex items-center justify-center border-r border-slate-100 py-3">時間帯</div>
+            {dates.map((item) => (
+              <div key={item.iso} className="flex items-center justify-center border-r border-slate-100 py-3 last:border-r-0">
+                {item.label}
               </div>
             ))}
           </div>
+          {TIME_SLOTS.map((slot) => (
+            <div
+              key={slot.key}
+              className="grid grid-cols-[150px_repeat(7,_1fr)] border-b border-slate-100 last:border-b-0"
+            >
+              <div className="flex items-center justify-center border-r border-slate-100 bg-slate-50 px-4 py-5 text-sm font-medium text-slate-600">
+                {slot.label.split("\n").map((line) => (
+                  <span key={line} className="block leading-tight">
+                    {line}
+                  </span>
+                ))}
+              </div>
+              {dates.map((item) => (
+                <div
+                  key={`${item.iso}-${slot.key}`}
+                  className="border-r border-slate-100 px-2 py-2 last:border-r-0"
+                >
+                  {renderCell(item.iso, slot.key)}
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
-
-        {errorMessage && (
-          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-            {errorMessage}
-          </div>
-        )}
       </div>
+
+      {errorMessage && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {errorMessage}
+        </div>
+      )}
     </div>
   );
 }
