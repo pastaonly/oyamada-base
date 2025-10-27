@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import clsx from "clsx";
 import type { Components } from "react-markdown";
+import type { HTMLAttributes, ReactNode } from "react";
 
 const markdownComponents: Components = {
   h1: (props) => <h1 className="mt-6 text-xl font-semibold text-slate-900 first:mt-0" {...props} />,
@@ -40,7 +41,7 @@ const markdownComponents: Components = {
       {...props}
     />
   ),
-  code: ({ inline, children, ...rest }) =>
+  code: ({ inline, children, ...rest }: { inline?: boolean; children?: ReactNode } & HTMLAttributes<HTMLElement>) =>
     inline ? (
       <code className="rounded bg-slate-100 px-1 py-0.5 text-[13px] text-slate-700" {...rest}>
         {children}

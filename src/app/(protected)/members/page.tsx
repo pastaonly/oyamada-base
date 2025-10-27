@@ -16,7 +16,6 @@ type RegisteredMember = {
   nickname: string;
   bio: string;
   photoURL: string;
-  preferredRoom: SpaceKey | null;
 };
 
 type ContractRecord = {
@@ -33,7 +32,6 @@ type CombinedMember = {
   nickname: string;
   photoURL: string;
   bio: string;
-  preferredRoom: SpaceKey | null;
   contractPreferredRoom: SpaceKey | null;
   status: "registered" | "pending";
 };
@@ -88,7 +86,6 @@ export default function MembersPage() {
               : fallbackName,
           bio: typeof data.bio === "string" ? data.bio : "",
           photoURL: typeof data.photoURL === "string" ? data.photoURL : "",
-          preferredRoom: (data.preferredRoom as SpaceKey | null) ?? null,
         };
       });
       setRegisteredMembers(list);
@@ -136,7 +133,6 @@ export default function MembersPage() {
         nickname: member.nickname,
         photoURL: member.photoURL,
         bio: member.bio,
-        preferredRoom: member.preferredRoom,
         contractPreferredRoom: null,
         status: "registered",
       });
@@ -148,9 +144,6 @@ export default function MembersPage() {
         const existing = map.get(key);
         if (existing) {
           existing.contractPreferredRoom = record.preferredRoom ?? existing.contractPreferredRoom;
-          if (record.preferredRoom !== undefined && record.preferredRoom !== null) {
-            existing.preferredRoom = record.preferredRoom;
-          }
         } else {
           const name = record.displayName?.trim() || record.email;
           map.set(key, {
@@ -160,7 +153,6 @@ export default function MembersPage() {
             nickname: name,
             photoURL: "",
             bio: "",
-            preferredRoom: record.preferredRoom ?? null,
             contractPreferredRoom: record.preferredRoom ?? null,
             status: "pending",
           });
@@ -192,9 +184,7 @@ const selectedMember = selectedMemberId
 
   useEffect(() => {
     if (selectedMember) {
-      setPreferredRoomDraft(
-        selectedMember.contractPreferredRoom ?? selectedMember.preferredRoom ?? null,
-      );
+      setPreferredRoomDraft(selectedMember.contractPreferredRoom ?? null);
       setModalError(null);
     }
   }, [selectedMember]);
@@ -224,14 +214,6 @@ const selectedMember = selectedMemberId
         },
         { merge: true },
       );
-
-      if (selectedMember.uid) {
-        await setDoc(
-          doc(db, "users", selectedMember.uid),
-          { preferredRoom: preferredRoomDraft ?? null },
-          { merge: true },
-        );
-      }
 
       setSelectedMemberId(null);
     } catch (error) {
@@ -272,9 +254,7 @@ const selectedMember = selectedMemberId
               member.status === "registered"
                 ? "border-blue-200 bg-blue-50 text-blue-700"
                 : "border-amber-200 bg-amber-50 text-amber-700";
-            const preferredRoomLabel = getPreferredRoomLabel(
-              member.contractPreferredRoom ?? member.preferredRoom ?? null,
-            );
+            const preferredRoomLabel = getPreferredRoomLabel(member.contractPreferredRoom ?? null);
 
             return (
               <article
@@ -371,10 +351,7 @@ const selectedMember = selectedMemberId
             <div className="space-y-4 px-6 py-5 text-sm text-slate-700">
               <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                 <span className="rounded-full border border-slate-200 px-2 py-0.5">
-                  優先部屋:{" "}
-                  {getPreferredRoomLabel(
-                    selectedMember.contractPreferredRoom ?? selectedMember.preferredRoom ?? null,
-                  )}
+                  優先部屋: {getPreferredRoomLabel(selectedMember.contractPreferredRoom ?? null)}
                 </span>
                 <span
                   className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${

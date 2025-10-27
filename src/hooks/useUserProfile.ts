@@ -36,7 +36,6 @@ export function useUserProfile(): UseUserProfileResult {
           bio: data.bio ?? "",
           photoURL: data.photoURL ?? user.photoURL ?? "",
           isAdmin: data.isAdmin ?? false,
-          preferredRoom: data.preferredRoom ?? null,
           memberType: data.memberType ?? null,
           contributionSummary: {
             cleaningCount: data.contributionSummary?.cleaningCount ?? 0,

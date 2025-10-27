@@ -10,7 +10,6 @@ export interface AppUser {
   bio: string;
   photoURL: string;
   isAdmin: boolean;
-  preferredRoom: SpaceKey | null;
   memberType: MemberType;
   contributionSummary: {
     cleaningCount: number;

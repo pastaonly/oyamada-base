@@ -63,7 +63,7 @@
 
 ### データモデル補足
 
-- `users/{uid}` ドキュメントには `preferredRoom`（`front` / `back` / `living` / null）を想定
+- `users/{uid}` ドキュメントはプロフィール情報のみを保持します（優先部屋は含みません）
 - `memberContracts/{email}` が存在するメールアドレスのみログイン可能
 - `reservations/{id}` ドキュメント例
   ```json
@@ -96,3 +96,45 @@
 ```bash
 firebase deploy --only storage
 ```
+
+### preferredRoom 移行手順
+
+旧実装で `users/{uid}.preferredRoom` に保存していた優先部屋は、現在 `memberContracts/{email}.preferredRoom` で管理しています。過去データを移す場合は、Firebase Admin SDK などで以下のようなスクリプトを実行してください。
+
+```ts
+import { initializeApp, cert } from "firebase-admin/app";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
+
+initializeApp({
+  credential: cert(process.env.GOOGLE_APPLICATION_CREDENTIALS!),
+});
+
+const db = getFirestore();
+
+async function migratePreferredRooms() {
+  const snapshot = await db.collection("users").get();
+  const batch = db.batch();
+
+  snapshot.forEach((doc) => {
+    const data = doc.data();
+    if (data.email && data.preferredRoom) {
+      batch.set(
+        db.collection("memberContracts").doc(data.email),
+        {
+          preferredRoom: data.preferredRoom,
+          email: data.email,
+          displayName: data.nickname ?? data.displayName ?? data.email,
+        },
+        { merge: true },
+      );
+      batch.update(doc.ref, { preferredRoom: FieldValue.delete() });
+    }
+  });
+
+  await batch.commit();
+}
+
+migratePreferredRooms().catch(console.error);
+```
+
+実行後は `firebase deploy --only firestore:rules` で最新ルールを反映し、`users` コレクションには優先部屋フィールドが残らないようにしてください。

@@ -59,7 +59,6 @@ export default function LoginPage() {
           nickname: credential.user.displayName ?? "",
           bio: "",
           createdAt: serverTimestamp(),
-          preferredRoom: null,
           memberType: null,
           contributionSummary: {
             cleaningCount: 0,
