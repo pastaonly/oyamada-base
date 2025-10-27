@@ -20,7 +20,7 @@ type RegisteredMember = {
 
 type ContractRecord = {
   email: string;
-  preferredRoom: SpaceKey | null;
+  preferredRoom: SpaceKey | null | string;
   displayName?: string;
 };
 
@@ -96,20 +96,19 @@ export default function MembersPage() {
   }, []);
 
   useEffect(() => {
-    if (!isAdmin) {
-      setContractRecords([]);
-      setContractsLoading(false);
-      return;
-    }
-
     setContractsLoading(true);
     const contractsQuery = query(collection(db, CONTRACT_COLLECTION), orderBy("__name__", "asc"));
     const unsubscribe = onSnapshot(contractsQuery, (snapshot) => {
       const list: ContractRecord[] = snapshot.docs.map((docSnap) => {
         const data = docSnap.data() as Partial<ContractRecord>;
+        const preferred = data.preferredRoom;
+        const normalizedPreferred: SpaceKey | null =
+          preferred === "front" || preferred === "back" || preferred === "living"
+            ? preferred
+            : null;
         return {
           email: docSnap.id,
-          preferredRoom: (data.preferredRoom as SpaceKey | null) ?? null,
+          preferredRoom: normalizedPreferred,
           displayName: data.displayName,
         };
       });
@@ -118,7 +117,7 @@ export default function MembersPage() {
     });
 
     return () => unsubscribe();
-  }, [isAdmin]);
+  }, []);
 
   const combinedMembers = useMemo<CombinedMember[]>(() => {
     const map = new Map<string, CombinedMember>();
@@ -138,27 +137,31 @@ export default function MembersPage() {
       });
     });
 
-    if (isAdmin) {
-      contractRecords.forEach((record) => {
-        const key = record.email.toLowerCase();
-        const existing = map.get(key);
-        if (existing) {
-          existing.contractPreferredRoom = record.preferredRoom ?? existing.contractPreferredRoom;
-        } else {
-          const name = record.displayName?.trim() || record.email;
-          map.set(key, {
-            id: record.email,
-            email: record.email,
-            displayName: name,
-            nickname: name,
-            photoURL: "",
-            bio: "",
-            contractPreferredRoom: record.preferredRoom ?? null,
-            status: "pending",
-          });
-        }
-      });
-    }
+    contractRecords.forEach((record) => {
+      const key = record.email.toLowerCase();
+      const existing = map.get(key);
+      const normalizedPreferred: SpaceKey | null =
+        record.preferredRoom === "front" ||
+        record.preferredRoom === "back" ||
+        record.preferredRoom === "living"
+          ? record.preferredRoom
+          : null;
+      if (existing) {
+        existing.contractPreferredRoom = normalizedPreferred;
+      } else {
+        const name = record.displayName?.trim() || record.email;
+        map.set(key, {
+          id: record.email,
+          email: record.email,
+          displayName: name,
+          nickname: name,
+          photoURL: "",
+          bio: "",
+          contractPreferredRoom: normalizedPreferred,
+          status: "pending",
+        });
+      }
+    });
 
     const list = Array.from(map.values());
 
@@ -190,14 +193,16 @@ const selectedMember = selectedMemberId
   }, [selectedMember]);
 
   const handleCardSelect = (memberId: string) => {
-    if (!isAdmin) {
-      return;
-    }
     setSelectedMemberId(memberId);
   };
 
   const handlePreferredRoomSave = async () => {
     if (!selectedMember) {
+      return;
+    }
+
+    if (!isAdmin) {
+      setModalError("保存権限がありません");
       return;
     }
 
@@ -260,13 +265,10 @@ const selectedMember = selectedMemberId
               <article
                 key={member.id}
                 className="rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                role={isAdmin ? "button" : undefined}
-                tabIndex={isAdmin ? 0 : -1}
+                role="button"
+                tabIndex={0}
                 onClick={() => handleCardSelect(member.id)}
                 onKeyDown={(event) => {
-                  if (!isAdmin) {
-                    return;
-                  }
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
                     handleCardSelect(member.id);
@@ -314,7 +316,7 @@ const selectedMember = selectedMemberId
         </div>
       )}
 
-      {isAdmin && selectedMember && (
+      {selectedMember && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 py-8"
           role="dialog"
@@ -364,44 +366,50 @@ const selectedMember = selectedMemberId
                 </span>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                <h4 className="text-sm font-semibold text-slate-800">優先部屋を設定</h4>
-                <p className="mt-1 text-xs text-slate-500">
-                  保存すると契約情報およびユーザ設定に反映されます。
-                </p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {ROOM_OPTIONS.map((option) => (
-                    <label
-                      key={option.label}
-                      className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition ${
-                        preferredRoomDraft === option.value
-                          ? "border-blue-400 bg-blue-50 text-blue-700"
-                          : "border-slate-200 bg-white hover:border-blue-300"
-                      }`}
+              {isAdmin ? (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                  <h4 className="text-sm font-semibold text-slate-800">優先部屋を設定</h4>
+                  <p className="mt-1 text-xs text-slate-500">
+                    保存すると契約情報に反映されます。
+                  </p>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {ROOM_OPTIONS.map((option) => (
+                      <label
+                        key={option.label}
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition ${
+                          preferredRoomDraft === option.value
+                            ? "border-blue-400 bg-blue-50 text-blue-700"
+                            : "border-slate-200 bg-white hover:border-blue-300"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="preferredRoom"
+                          className="h-4 w-4"
+                          checked={preferredRoomDraft === option.value}
+                          onChange={() => setPreferredRoomDraft(option.value)}
+                        />
+                        <span>{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex items-center justify-end gap-2">
+                    {modalError && <p className="text-xs font-medium text-red-600">{modalError}</p>}
+                    <button
+                      type="button"
+                      onClick={handlePreferredRoomSave}
+                      disabled={isSavingPreferredRoom}
+                      className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
                     >
-                      <input
-                        type="radio"
-                        name="preferredRoom"
-                        className="h-4 w-4"
-                        checked={preferredRoomDraft === option.value}
-                        onChange={() => setPreferredRoomDraft(option.value)}
-                      />
-                      <span>{option.label}</span>
-                    </label>
-                  ))}
+                      {isSavingPreferredRoom ? "保存中..." : "保存する"}
+                    </button>
+                  </div>
                 </div>
-                <div className="mt-4 flex items-center justify-end gap-2">
-                  {modalError && <p className="text-xs font-medium text-red-600">{modalError}</p>}
-                  <button
-                    type="button"
-                    onClick={handlePreferredRoomSave}
-                    disabled={isSavingPreferredRoom}
-                    className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {isSavingPreferredRoom ? "保存中..." : "保存する"}
-                  </button>
+              ) : (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-600">
+                  優先部屋: {getPreferredRoomLabel(selectedMember.contractPreferredRoom ?? null)}
                 </div>
-              </div>
+              )}
 
               {selectedMember.status === "registered" && selectedMember.bio ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">

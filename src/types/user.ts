@@ -1,5 +1,3 @@
-import type { SpaceKey } from "@/constants/schedule";
-
 export type MemberType = "adult" | "child" | "guest" | "other" | null;
 
 export interface AppUser {
