@@ -324,7 +324,7 @@ const selectedMember = selectedMemberId
           onClick={() => setSelectedMemberId(null)}
         >
           <div
-            className="w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl"
+            className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
@@ -350,74 +350,78 @@ const selectedMember = selectedMemberId
                 閉じる
               </button>
             </div>
-            <div className="space-y-4 px-6 py-5 text-sm text-slate-700">
-              <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                <span className="rounded-full border border-slate-200 px-2 py-0.5">
-                  優先部屋: {getPreferredRoomLabel(selectedMember.contractPreferredRoom ?? null)}
-                </span>
-                <span
-                  className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
-                    selectedMember.status === "registered"
-                      ? "border-blue-200 bg-blue-50 text-blue-700"
-                      : "border-amber-200 bg-amber-50 text-amber-700"
-                  }`}
-                >
-                  {selectedMember.status === "registered" ? "登録済" : "未登録"}
-                </span>
-              </div>
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 text-sm text-slate-700">
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                  <span className="rounded-full border border-slate-200 px-2 py-0.5">
+                    優先部屋: {getPreferredRoomLabel(selectedMember.contractPreferredRoom ?? null)}
+                  </span>
+                  <span
+                    className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+                      selectedMember.status === "registered"
+                        ? "border-blue-200 bg-blue-50 text-blue-700"
+                        : "border-amber-200 bg-amber-50 text-amber-700"
+                    }`}
+                  >
+                    {selectedMember.status === "registered" ? "登録済" : "未登録"}
+                  </span>
+                </div>
 
-              {isAdmin ? (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                  <h4 className="text-sm font-semibold text-slate-800">優先部屋を設定</h4>
-                  <p className="mt-1 text-xs text-slate-500">
-                    保存すると契約情報に反映されます。
-                  </p>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    {ROOM_OPTIONS.map((option) => (
-                      <label
-                        key={option.label}
-                        className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition ${
-                          preferredRoomDraft === option.value
-                            ? "border-blue-400 bg-blue-50 text-blue-700"
-                            : "border-slate-200 bg-white hover:border-blue-300"
-                        }`}
+                {isAdmin ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <h4 className="text-sm font-semibold text-slate-800">優先部屋を設定</h4>
+                    <p className="mt-1 text-xs text-slate-500">
+                      保存すると契約情報に反映されます。
+                    </p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {ROOM_OPTIONS.map((option) => (
+                        <label
+                          key={option.label}
+                          className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition ${
+                            preferredRoomDraft === option.value
+                              ? "border-blue-400 bg-blue-50 text-blue-700"
+                              : "border-slate-200 bg-white hover:border-blue-300"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="preferredRoom"
+                            className="h-4 w-4"
+                            checked={preferredRoomDraft === option.value}
+                            onChange={() => setPreferredRoomDraft(option.value)}
+                          />
+                          <span>{option.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="mt-4 flex items-center justify-end gap-2">
+                      {modalError && (
+                        <p className="text-xs font-medium text-red-600">{modalError}</p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handlePreferredRoomSave}
+                        disabled={isSavingPreferredRoom}
+                        className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
                       >
-                        <input
-                          type="radio"
-                          name="preferredRoom"
-                          className="h-4 w-4"
-                          checked={preferredRoomDraft === option.value}
-                          onChange={() => setPreferredRoomDraft(option.value)}
-                        />
-                        <span>{option.label}</span>
-                      </label>
-                    ))}
+                        {isSavingPreferredRoom ? "保存中..." : "保存する"}
+                      </button>
+                    </div>
                   </div>
-                  <div className="mt-4 flex items-center justify-end gap-2">
-                    {modalError && <p className="text-xs font-medium text-red-600">{modalError}</p>}
-                    <button
-                      type="button"
-                      onClick={handlePreferredRoomSave}
-                      disabled={isSavingPreferredRoom}
-                      className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                      {isSavingPreferredRoom ? "保存中..." : "保存する"}
-                    </button>
-                  </div>
-                </div>
-              ) : null}
+                ) : null}
 
-              {selectedMember.status === "registered" && selectedMember.bio ? (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                  <MarkdownContent content={selectedMember.bio} />
-                </div>
-              ) : (
-                <p className="text-sm text-slate-500">
-                  {selectedMember.status === "registered"
-                    ? "自己紹介が登録されていません。"
-                    : "未登録ユーザーのため、自己紹介は表示できません。"}
-                </p>
-              )}
+                {selectedMember.status === "registered" && selectedMember.bio ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <MarkdownContent content={selectedMember.bio} />
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500">
+                    {selectedMember.status === "registered"
+                      ? "自己紹介が登録されていません。"
+                      : "未登録ユーザーのため、自己紹介は表示できません。"}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>

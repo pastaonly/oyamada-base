@@ -195,12 +195,8 @@ export function ProfileEditorDialog({ isOpen, onClose, user }: ProfileEditorDial
             </button>
           </div>
         </div>
-        <form
-          id="profile-editor-form"
-          onSubmit={handleSubmit}
-          className="flex-1 overflow-y-auto px-6 py-6"
-        >
-          <div className="grid gap-6 pb-6">
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <form id="profile-editor-form" onSubmit={handleSubmit} className="grid gap-6 pb-6">
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
               <Avatar src={avatarSrc} fallback={displayName} size={84} title={displayName} />
               <div className="flex flex-col gap-3 text-sm text-slate-600">
@@ -238,41 +234,41 @@ export function ProfileEditorDialog({ isOpen, onClose, user }: ProfileEditorDial
                 />
               </div>
             </div>
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">ニックネーム</span>
-            <input
-              type="text"
-              maxLength={80}
-              value={nickname}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setNickname(event.target.value)}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:outline-none"
-              placeholder="例：尾山太郎"
-              disabled={isSaving}
-            />
-          </label>
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">
-              自己紹介（Markdown対応）
-            </span>
-            <textarea
-              value={bio}
-              onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setBio(event.target.value)}
-              rows={8}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:outline-none"
-              placeholder={MARKDOWN_PLACEHOLDER}
-              disabled={isSaving}
-            />
-            <span className="text-xs text-slate-400">
-              見出し・リンク・画像（URL）などが利用できます。
-            </span>
-          </label>
-          {errorMessage && <p className="text-sm font-medium text-red-600">{errorMessage}</p>}
-          </div>
-        </form>
-        <div className="grid gap-4 border-t border-slate-100 bg-slate-50/40 px-6 py-5 text-sm text-slate-700">
-          <h3 className="text-sm font-semibold text-slate-700">プレビュー</h3>
-          <div className="max-h-64 overflow-y-auto rounded-2xl border border-slate-100 bg-slate-50/60 p-4 text-sm text-slate-700">
-            <MarkdownContent content={previewContent} />
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-slate-700">ニックネーム</span>
+              <input
+                type="text"
+                maxLength={80}
+                value={nickname}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setNickname(event.target.value)}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:outline-none"
+                placeholder="例：尾山太郎"
+                disabled={isSaving}
+              />
+            </label>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-slate-700">
+                自己紹介（Markdown対応）
+              </span>
+              <textarea
+                value={bio}
+                onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setBio(event.target.value)}
+                rows={8}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:outline-none"
+                placeholder={MARKDOWN_PLACEHOLDER}
+                disabled={isSaving}
+              />
+              <span className="text-xs text-slate-400">
+                見出し・リンク・画像（URL）などが利用できます。
+              </span>
+            </label>
+            {errorMessage && <p className="text-sm font-medium text-red-600">{errorMessage}</p>}
+          </form>
+          <div className="grid gap-4 border-t border-slate-100 bg-slate-50/40 px-6 py-5 text-sm text-slate-700">
+            <h3 className="text-sm font-semibold text-slate-700">プレビュー</h3>
+            <div className="max-h-64 overflow-y-auto rounded-2xl border border-slate-100 bg-slate-50/60 p-4 text-sm text-slate-700">
+              <MarkdownContent content={previewContent} />
+            </div>
           </div>
         </div>
       </div>
