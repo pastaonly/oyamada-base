@@ -15,14 +15,21 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-6">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.25em] text-slate-400">
-                Oyamadai Base
-              </p>
-              <h1 className="text-lg font-semibold text-slate-900">会員アプリ</h1>
-            </div>
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
+          <div className="flex items-center gap-4 sm:gap-6">
+            <Link
+              href="/"
+              className="group inline-flex items-center justify-center"
+              aria-label="おやまだいベース ホーム"
+            >
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-[14px] bg-gradient-to-br from-purple-500 via-fuchsia-500 to-rose-500 text-center text-[10px] font-semibold leading-[1.1] text-white shadow-sm ring-1 ring-white/40 transition group-hover:translate-y-[1px] group-hover:shadow-none sm:h-14 sm:w-14">
+                {"おやま"}
+                <br/>
+                {"だい"}
+                <br/>
+                {"ベース"}
+              </span>
+            </Link>
             <nav className="flex items-center gap-2 text-sm text-slate-600">
               {navItems.map((item) => {
                 const isActive =
