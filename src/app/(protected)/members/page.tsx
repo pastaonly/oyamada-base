@@ -405,11 +405,7 @@ const selectedMember = selectedMemberId
                     </button>
                   </div>
                 </div>
-              ) : (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-600">
-                  優先部屋: {getPreferredRoomLabel(selectedMember.contractPreferredRoom ?? null)}
-                </div>
-              )}
+              ) : null}
 
               {selectedMember.status === "registered" && selectedMember.bio ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
