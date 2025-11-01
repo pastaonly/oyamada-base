@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
+import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Avatar } from "@/components/common/Avatar";
 import { ActivityIconBadge } from "@/components/commons/ActivityIconBadge";
 import { ActivityCommentSection } from "@/components/commons/ActivityCommentSection";
@@ -70,7 +71,6 @@ export function ActivityCard({
   definitions,
 }: ActivityCardProps) {
   const [logState, setLogState] = useState<ActivityLog>(log);
-  const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [isPhotoOpen, setIsPhotoOpen] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isThanksCoolingDown, setIsThanksCoolingDown] = useState(false);
@@ -157,14 +157,39 @@ export function ActivityCard({
   return (
     <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex gap-4">
+        <div className="flex items-start gap-4">
           <ActivityIconBadge iconId={logState.definitionIconId} size="lg" />
-          <div className="space-y-1">
-            <h3 className="text-base font-semibold text-slate-900">
-              {logState.definitionTitle}
-            </h3>
-            <p className="text-sm text-slate-500">{optionLabels}</p>
-            <p className="text-xs text-slate-400">{executedAtLabel}</p>
+          <div className="flex flex-col gap-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base font-semibold text-slate-900">
+                {logState.definitionTitle}
+              </h3>
+              <span className="text-sm text-slate-500">{optionLabels}</span>
+            </div>
+            <div className="flex items-center gap-3 text-xs text-slate-600">
+              <span>{executedAtLabel}</span>
+              {isMine && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditorOpen(true)}
+                    className="rounded-md border border-transparent p-1 text-slate-400 transition hover:border-slate-300 hover:text-blue-600"
+                    aria-label="アクティビティを編集"
+                  >
+                    <PencilSquareIcon className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    className="rounded-md border border-transparent p-1 text-slate-400 transition hover:border-slate-300 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    aria-label="アクティビティを削除"
+                    disabled={isDeleting}
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -208,19 +233,11 @@ export function ActivityCard({
       )}
 
       <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-slate-100 pt-4 text-sm text-slate-500">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-slate-700">{logState.thanksCount}</span>
-          <span>Thanks!</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-slate-700">{logState.commentCount}</span>
-          <span>コメント</span>
-        </div>
         {errorMessage && <span className="text-xs text-rose-500">{errorMessage}</span>}
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        {!isMine && (
+      {!isMine && (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={handleThanks}
@@ -230,49 +247,16 @@ export function ActivityCard({
             )}
             disabled={isThanksCoolingDown}
           >
-            Thanks!
+            Thanks! {logState.thanksCount}
           </button>
-        )}
-        <button
-          type="button"
-          onClick={() => setIsCommentOpen((prev) => !prev)}
-          className={clsx(
-            "rounded-full border px-4 py-2 text-sm font-semibold transition",
-            isCommentOpen
-              ? "border-blue-600 bg-blue-50 text-blue-600"
-              : "border-slate-300 text-slate-600 hover:border-blue-300 hover:text-blue-600",
-          )}
-        >
-          Comment
-        </button>
-        {isMine && (
-          <>
-            <button
-              type="button"
-              onClick={() => setIsEditorOpen(true)}
-              className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:border-blue-300 hover:text-blue-600"
-            >
-              編集
-            </button>
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="rounded-full border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-600 hover:border-rose-400 hover:text-rose-700"
-              disabled={isDeleting}
-            >
-              {isDeleting ? "削除中..." : "削除"}
-            </button>
-          </>
-        )}
-      </div>
-
-      {isCommentOpen && (
-        <ActivityCommentSection
-          logId={logState.id}
-          currentUser={currentUser}
-          onCountChange={handleCommentCountChange}
-        />
+        </div>
       )}
+
+      <ActivityCommentSection
+        logId={logState.id}
+        currentUser={currentUser}
+        onCountChange={handleCommentCountChange}
+      />
 
       <ActivityPhotoModal
         isOpen={isPhotoOpen}

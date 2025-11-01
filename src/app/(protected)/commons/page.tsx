@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ActivityComposer } from "@/components/commons/ActivityComposer";
 import { ActivityTimeline } from "@/components/commons/ActivityTimeline";
@@ -16,9 +16,9 @@ export default function CommonsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [isManagerOpen, setIsManagerOpen] = useState(false);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     setRefreshKey((prev) => prev + 1);
-  };
+  }, []);
 
   const content = useMemo(() => {
     if (isLoading) {
@@ -38,41 +38,37 @@ export default function CommonsPage() {
     }
 
     return (
-      <>
-        <ActivityComposer definitions={definitions} user={userProfile} onCreated={handleRefresh} />
-        <ActivityTimeline
-          definitions={definitions}
-          currentUser={userProfile}
-          refreshKey={refreshKey}
-          initialUserFilter={initialUserFilter}
-          onRequireReload={handleRefresh}
-        />
-      </>
+      <ActivityComposer definitions={definitions} user={userProfile} onCreated={handleRefresh}>
+        {({ onOpen, disabled, statusMessage }) => (
+          <ActivityTimeline
+            definitions={definitions}
+            currentUser={userProfile}
+            refreshKey={refreshKey}
+            initialUserFilter={initialUserFilter}
+            onRequireReload={handleRefresh}
+            triggerButton={
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={onOpen}
+                  className="inline-flex items-center justify-center rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                  disabled={disabled}
+                >
+                  新規登録
+                </button>
+                {statusMessage && (
+                  <p className="text-xs text-slate-500">{statusMessage}</p>
+                )}
+              </div>
+            }
+          />
+        )}
+      </ActivityComposer>
     );
-  }, [definitions, isLoading, error, userProfile, refreshKey, initialUserFilter]);
+  }, [definitions, isLoading, error, userProfile, refreshKey, initialUserFilter, handleRefresh]);
 
   return (
     <div className="grid gap-10">
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">Commons</p>
-            <h1 className="text-2xl font-bold text-slate-900">助け合いアクティビティ</h1>
-          </div>
-          {userProfile?.isAdmin && (
-            <button
-              type="button"
-              onClick={() => setIsManagerOpen(true)}
-              className="rounded-full border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-600 hover:border-blue-300"
-            >
-              アクティビティ管理
-            </button>
-          )}
-        </div>
-        <p className="text-sm text-slate-600">
-          掃除やごみ捨て、差し入れなどの活動を記録して、Thanks!とコメントで気持ちを伝えましょう。
-        </p>
-      </header>
       {content}
       {userProfile?.isAdmin && (
         <ActivityDefinitionManagerDialog

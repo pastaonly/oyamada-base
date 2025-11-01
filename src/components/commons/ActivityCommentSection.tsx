@@ -244,6 +244,14 @@ export function ActivityCommentSection({
 
   return (
     <div className="mt-4 space-y-4">
+      {errorMessage && (
+        <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">{errorMessage}</p>
+      )}
+      {commentList.length > 0 ? (
+        <ul className="space-y-3">{commentList}</ul>
+      ) : (
+        <p className="text-sm text-slate-500">コメントはまだありません。</p>
+      )}
       <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
         <Avatar src={currentUser?.photoURL ?? ""} name={currentUser?.nickname ?? currentUser?.displayName ?? ""} className="h-9 w-9" />
         <div className="flex-1">
@@ -268,14 +276,6 @@ export function ActivityCommentSection({
           {isSubmitting ? "送信中" : "送信"}
         </button>
       </div>
-      {errorMessage && (
-        <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">{errorMessage}</p>
-      )}
-      {commentList.length > 0 ? (
-        <ul className="space-y-3">{commentList}</ul>
-      ) : (
-        <p className="text-sm text-slate-500">コメントはまだありません。</p>
-      )}
     </div>
   );
 }

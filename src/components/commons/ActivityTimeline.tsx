@@ -1,6 +1,6 @@
 'use client';
 
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useMemberDirectory } from "@/hooks/useMemberDirectory";
 import { fetchActivityLogs, type ActivityLogCursor } from "@/services/commons";
 import type { ActivityDefinition, ActivityLog } from "@/types/commons";
@@ -15,6 +15,7 @@ type ActivityTimelineProps = {
   initialUserFilter?: string | null;
   onRequireReload?: () => void;
   definitions: ActivityDefinition[];
+  triggerButton?: ReactNode;
 };
 
 export function ActivityTimeline({
@@ -23,6 +24,7 @@ export function ActivityTimeline({
   initialUserFilter = null,
   onRequireReload,
   definitions,
+  triggerButton,
 }: ActivityTimelineProps) {
   const { members } = useMemberDirectory();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(initialUserFilter);
@@ -130,29 +132,9 @@ export function ActivityTimeline({
   };
 
   return (
-    <section className="mt-10 grid gap-6">
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-slate-900">アクティビティタイムライン</h2>
-          <p className="text-sm text-slate-500">メンバーの投稿をタイムラインで確認できます</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <label htmlFor="timeline-user-filter" className="text-sm text-slate-500">
-            メンバーで絞り込み
-          </label>
-          <select
-            id="timeline-user-filter"
-            value={selectedUserId ?? ""}
-            onChange={handleUserFilterChange}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          >
-            {memberOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label || "名前未設定"}
-              </option>
-            ))}
-          </select>
-        </div>
+    <section className="grid gap-5">
+      <div className="flex flex-wrap items-center justify-center">
+        {triggerButton}
       </div>
 
       {isLoading ? (
