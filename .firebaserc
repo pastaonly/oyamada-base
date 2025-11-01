@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "oyamadai-base"
-  }
+  },
+  "targets": {
+    "oyamadai-base": {
+      "storage": {
+        "default": [
+          "oyamadai-base.firebasestorage.app"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

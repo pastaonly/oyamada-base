@@ -5,6 +5,7 @@
   },
   "storage": [
     {
+      "target": "default",
       "bucket": "oyamadai-base.firebasestorage.app",
       "rules": "storage.rules"
     }

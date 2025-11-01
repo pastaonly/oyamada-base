@@ -10,6 +10,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navItems = [
     { href: "/", label: "ホーム" },
     { href: "/members", label: "メンバー" },
+    { href: "/commons", label: "コモンズ" },
   ];
 
   return (

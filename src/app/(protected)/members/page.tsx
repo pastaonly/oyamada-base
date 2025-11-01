@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { collection, doc, onSnapshot, orderBy, query, setDoc } from "firebase/firestore";
 import { Avatar } from "@/components/common/Avatar";
 import { MarkdownContent } from "@/components/common/MarkdownContent";
+import { UserActivityHighlights } from "@/components/commons/UserActivityHighlights";
 import { SPACES, type SpaceKey } from "@/constants/schedule";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { db } from "@/lib/firebaseConfig";
@@ -366,6 +367,13 @@ const selectedMember = selectedMemberId
                     {selectedMember.status === "registered" ? "登録済" : "未登録"}
                   </span>
                 </div>
+
+                {selectedMember.uid && (
+                  <UserActivityHighlights
+                    userId={selectedMember.uid}
+                    onNavigate={() => setSelectedMemberId(null)}
+                  />
+                )}
 
                 {isAdmin ? (
                   <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
