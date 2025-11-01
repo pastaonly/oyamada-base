@@ -241,12 +241,6 @@ const selectedMember = selectedMemberId
 
   return (
     <div className="space-y-6">
-      <header className="space-y-1">
-        <h2 className="text-2xl font-semibold text-slate-900">
-          メンバー一覧{isAdmin ? "（管理者表示）" : ""}
-        </h2>
-        <p className="text-sm text-slate-500">表示メンバー {combinedMembers.length} 名</p>
-      </header>
 
       {combinedMembers.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-8 text-center text-sm text-slate-500">
