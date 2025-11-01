@@ -1,7 +1,6 @@
 'use client';
 
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useMemberDirectory } from "@/hooks/useMemberDirectory";
+import { startTransition, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { fetchActivityLogs, type ActivityLogCursor } from "@/services/commons";
 import type { ActivityDefinition, ActivityLog } from "@/types/commons";
 import type { AppUser } from "@/types/user";
@@ -26,8 +25,6 @@ export function ActivityTimeline({
   definitions,
   triggerButton,
 }: ActivityTimelineProps) {
-  const { members } = useMemberDirectory();
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(initialUserFilter);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [cursor, setCursor] = useState<ActivityLogCursor | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,16 +32,6 @@ export function ActivityTimeline({
   const [hasMore, setHasMore] = useState(true);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-
-  const memberOptions = useMemo(
-    () =>
-      [{ uid: "", nickname: "すべて", displayName: "", photoURL: "" }, ...members].map((member) => ({
-        value: member.uid,
-        label: member.nickname || member.displayName || "",
-        photoURL: member.photoURL,
-      })),
-    [members],
-  );
 
   const loadInitial = useCallback(
     async (userId: string | null) => {
@@ -75,7 +62,7 @@ export function ActivityTimeline({
     const { logs: fetchedLogs, nextCursor } = await fetchActivityLogs({
       limitCount: PAGE_SIZE,
       cursor,
-      userId: selectedUserId,
+      userId: initialUserFilter ?? null,
     });
     startTransition(() => {
       setLogs((prev) => [...prev, ...fetchedLogs]);
@@ -83,15 +70,15 @@ export function ActivityTimeline({
       setHasMore(Boolean(nextCursor));
       setIsFetchingMore(false);
     });
-  }, [cursor, hasMore, isFetchingMore, selectedUserId]);
+  }, [cursor, hasMore, isFetchingMore, initialUserFilter]);
 
   const handleRefresh = useCallback(() => {
-    loadInitial(selectedUserId);
-  }, [loadInitial, selectedUserId]);
+    loadInitial(initialUserFilter ?? null);
+  }, [loadInitial, initialUserFilter]);
 
   useEffect(() => {
-    loadInitial(selectedUserId);
-  }, [loadInitial, selectedUserId, refreshKey]);
+    loadInitial(initialUserFilter ?? null);
+  }, [loadInitial, initialUserFilter, refreshKey]);
 
   useEffect(() => {
     if (!sentinelRef.current) {
@@ -113,11 +100,6 @@ export function ActivityTimeline({
       observerRef.current?.disconnect();
     };
   }, [loadMore, logs]);
-
-  const handleUserFilterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = event.target.value;
-    setSelectedUserId(value === "" ? null : value);
-  };
 
   const handleLogDeleted = (logId: string) => {
     setLogs((prev) => prev.filter((log) => log.id !== logId));
