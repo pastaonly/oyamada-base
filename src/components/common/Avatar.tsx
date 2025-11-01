@@ -11,6 +11,7 @@ type AvatarProps = {
   size?: number;
   className?: string;
   title?: string;
+  disableInlineSize?: boolean;
 };
 
 export function Avatar({
@@ -19,6 +20,7 @@ export function Avatar({
   size = 40,
   className,
   title,
+  disableInlineSize = false,
 }: AvatarProps) {
   const initials = useMemo(() => {
     if (!fallback) {
@@ -31,7 +33,7 @@ export function Avatar({
     return trimmed.slice(0, 1).toUpperCase();
   }, [fallback]);
 
-  const dimensionStyle = { width: size, height: size };
+  const dimensionStyle = disableInlineSize ? undefined : { width: size, height: size };
 
   if (src) {
     return (
@@ -40,10 +42,7 @@ export function Avatar({
         alt={fallback ?? "avatar"}
         title={title ?? fallback ?? "avatar"}
         style={dimensionStyle}
-        className={clsx(
-          "rounded-full object-cover shadow-sm ring-1 ring-slate-200",
-          className,
-        )}
+        className={clsx("rounded-full object-cover shadow-sm ring-1 ring-slate-200", className)}
       />
     );
   }
@@ -51,11 +50,11 @@ export function Avatar({
   return (
     <span
       title={title ?? fallback ?? "avatar"}
-      style={dimensionStyle}
       className={clsx(
         "flex items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-600 shadow-sm ring-1 ring-slate-200",
         className,
       )}
+      style={dimensionStyle}
     >
       {initials}
     </span>
