@@ -41,16 +41,7 @@ export function ActivityDefinitionEditorForm({
   const [iconId, setIconId] = useState<ActivityIconId | "">(
     normalizeIconId(initialValue?.iconId),
   );
-  const [options, setOptions] = useState<ActivityOption[]>(
-    initialValue?.options.length
-      ? initialValue.options
-      : [
-          {
-            id: generateActivityOptionId(),
-            label: "",
-          },
-        ],
-  );
+  const [options, setOptions] = useState<ActivityOption[]>(initialValue?.options ?? []);
   const [isActive, setIsActive] = useState(initialValue?.isActive ?? true);
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -82,7 +73,7 @@ export function ActivityDefinitionEditorForm({
   };
 
   const handleRemoveOption = (optionId: string) => {
-    setOptions((prev) => (prev.length <= 1 ? prev : prev.filter((option) => option.id !== optionId)));
+    setOptions((prev) => prev.filter((option) => option.id !== optionId));
   };
 
   const handleMoveOption = (optionId: string, direction: -1 | 1) => {
@@ -119,10 +110,6 @@ export function ActivityDefinitionEditorForm({
         label: option.label.trim(),
       }))
       .filter((option) => option.label.length > 0);
-    if (normalizedOptions.length === 0) {
-      setLocalError("オプションを1つ以上入力してください");
-      return;
-    }
     await onSubmit({
       title: trimmedTitle,
       iconId,
@@ -172,7 +159,9 @@ export function ActivityDefinitionEditorForm({
 
       <div className="grid gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-slate-700">オプション</span>
+          <span className="text-sm font-medium text-slate-700">
+            オプション <span className="text-xs font-normal text-slate-400">(任意)</span>
+          </span>
           <button
             type="button"
             onClick={handleAddOption}
@@ -182,49 +171,55 @@ export function ActivityDefinitionEditorForm({
             追加
           </button>
         </div>
-        <div className="grid gap-2">
-          {options.map((option, index) => (
-            <div
-              key={option.id}
-              className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-center sm:gap-3"
-            >
-              <input
-                type="text"
-                value={option.label}
-                onChange={(event) => handleOptionLabelChange(option.id, event.target.value)}
-                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                placeholder="例: リビング"
-                disabled={submitting}
-              />
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleMoveOption(option.id, -1)}
-                  className="rounded-full border border-slate-300 px-3 py-1 text-xs text-slate-600 hover:border-blue-300 hover:text-blue-600 disabled:opacity-40"
-                  disabled={submitting || index === 0}
-                >
-                  ↑
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleMoveOption(option.id, 1)}
-                  className="rounded-full border border-slate-300 px-3 py-1 text-xs text-slate-600 hover:border-blue-300 hover:text-blue-600 disabled:opacity-40"
-                  disabled={submitting || index === options.length - 1}
-                >
-                  ↓
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveOption(option.id)}
-                  className="rounded-full border border-rose-200 px-3 py-1 text-xs text-rose-600 hover:border-rose-300 disabled:opacity-40"
-                  disabled={submitting || options.length <= 1}
-                >
-                  削除
-                </button>
+        {options.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+            オプションを使わない場合はこのままで保存できます。必要なら「追加」から項目を作成してください。
+          </p>
+        ) : (
+          <div className="grid gap-2">
+            {options.map((option, index) => (
+              <div
+                key={option.id}
+                className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-center sm:gap-3"
+              >
+                <input
+                  type="text"
+                  value={option.label}
+                  onChange={(event) => handleOptionLabelChange(option.id, event.target.value)}
+                  className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  placeholder="例: リビング"
+                  disabled={submitting}
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleMoveOption(option.id, -1)}
+                    className="rounded-full border border-slate-300 px-3 py-1 text-xs text-slate-600 hover:border-blue-300 hover:text-blue-600 disabled:opacity-40"
+                    disabled={submitting || index === 0}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleMoveOption(option.id, 1)}
+                    className="rounded-full border border-slate-300 px-3 py-1 text-xs text-slate-600 hover:border-blue-300 hover:text-blue-600 disabled:opacity-40"
+                    disabled={submitting || index === options.length - 1}
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveOption(option.id)}
+                    className="rounded-full border border-rose-200 px-3 py-1 text-xs text-rose-600 hover:border-rose-300 disabled:opacity-40"
+                    disabled={submitting}
+                  >
+                    削除
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <label className="flex items-center gap-2 text-sm text-slate-600">

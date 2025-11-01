@@ -297,6 +297,9 @@ function ensureDefinitionOptionLabels(
   optionIds: string[],
 ): { optionLabels: string[]; normalizedOptionIds: string[] } {
   const availableOptions = definition.options ?? [];
+  if (availableOptions.length === 0) {
+    return { optionLabels: [], normalizedOptionIds: [] };
+  }
   const labels: string[] = [];
   const normalizedIds: string[] = [];
   const optionIdSet = new Set<string>();

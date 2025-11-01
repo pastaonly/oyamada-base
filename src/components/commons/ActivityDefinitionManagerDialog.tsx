@@ -192,7 +192,9 @@ export function ActivityDefinitionManagerDialog({
                             {definition.title}
                           </h4>
                           <p className="text-xs text-slate-400">
-                            {definition.options.map((option) => option.label).join(" / ")}
+                            {definition.options.length > 0
+                              ? definition.options.map((option) => option.label).join(" / ")
+                              : "オプションなし"}
                           </p>
                         </div>
                       </div>

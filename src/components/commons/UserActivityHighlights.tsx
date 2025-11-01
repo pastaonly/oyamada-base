@@ -90,7 +90,9 @@ export function UserActivityHighlights({
                 <div>
                   <p className="text-sm font-semibold text-slate-800">{activity.definitionTitle}</p>
                   <p className="text-xs text-slate-500">
-                    {activity.optionLabels.join(" / ") || "詳細なし"}
+                    {activity.optionLabels.length > 0
+                      ? activity.optionLabels.join(" / ")
+                      : "オプションなし"}
                   </p>
                 </div>
               </div>

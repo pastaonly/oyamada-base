@@ -79,6 +79,7 @@ export function ActivityForm({
   );
 
   const availableOptions: ActivityOption[] = selectedDefinition?.options ?? [];
+  const hasOptions = availableOptions.length > 0;
 
   const existingPhoto = initialValues?.existingPhoto ?? null;
 
@@ -153,7 +154,7 @@ export function ActivityForm({
       setLocalError("アクティビティを選択してください");
       return;
     }
-    if (optionIds.length === 0) {
+    if (hasOptions && optionIds.length === 0) {
       setLocalError("オプションを1つ以上選択してください");
       return;
     }
@@ -206,11 +207,9 @@ export function ActivityForm({
         </select>
       </div>
 
-      <div>
-        <div className="text-sm font-medium text-slate-700">オプション</div>
-        {availableOptions.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-500">このアクティビティには選択肢がありません</p>
-        ) : (
+      {hasOptions ? (
+        <div>
+          <div className="text-sm font-medium text-slate-700">オプション</div>
           <div className="mt-2 flex flex-wrap gap-2">
             {availableOptions.map((option) => {
               const checked = optionIds.includes(option.id);
@@ -232,8 +231,15 @@ export function ActivityForm({
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div>
+          <div className="text-sm font-medium text-slate-700">オプション</div>
+          <p className="mt-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+            このアクティビティにはオプションはありません。
+          </p>
+        </div>
+      )}
 
   <div className="grid gap-2">
         <label htmlFor="activity-executedAt" className="text-sm font-medium text-slate-700">

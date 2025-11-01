@@ -84,7 +84,12 @@ export function ActivityCard({
 
   const isMine = currentUser?.uid === logState.user.userId;
   const executedAtLabel = useMemo(() => formatExecutedAt(logState.executedAt), [logState.executedAt]);
-  const optionLabels = useMemo(() => logState.optionLabels.join("・"), [logState.optionLabels]);
+  const optionLabels = useMemo(() => {
+    if (logState.optionLabels && logState.optionLabels.length > 0) {
+      return logState.optionLabels.join("・");
+    }
+    return "オプションなし";
+  }, [logState.optionLabels]);
 
   const handleThanks = async () => {
     if (isMine || isThanksCoolingDown) {
