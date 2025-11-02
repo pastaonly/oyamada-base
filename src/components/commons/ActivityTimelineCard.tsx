@@ -2,9 +2,15 @@
 
 import Image from "next/image";
 import { createPortal } from "react-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import { ChatBubbleLeftIcon, HeartIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  ChatBubbleLeftIcon,
+  EllipsisHorizontalIcon,
+  HeartIcon,
+  PencilSquareIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import { Avatar } from "@/components/common/Avatar";
 import { ActivityIconBadge } from "@/components/commons/ActivityIconBadge";
 import { ActivityCommentSection } from "@/components/commons/ActivityCommentSection";
@@ -79,6 +85,9 @@ export function ActivityCard({
   const [isThanksAnimating, setIsThanksAnimating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setLogState(log);
@@ -131,6 +140,7 @@ export function ActivityCard({
   };
 
   const handleDelete = async () => {
+    setIsMenuOpen(false);
     if (!currentUser) {
       return;
     }
@@ -156,43 +166,103 @@ export function ActivityCard({
     onRequestReload?.();
   };
 
+  useEffect(() => {
+    if (!isMenuOpen) {
+      return;
+    }
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(target) &&
+        menuButtonRef.current &&
+        !menuButtonRef.current.contains(target)
+      ) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMenuOpen]);
+
+  const handleEditMenuClick = () => {
+    setIsMenuOpen(false);
+    setIsEditorOpen(true);
+  };
+
   return (
     <article className="mx-auto flex w-full max-w-[600px] flex-col gap-3">
       <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-start gap-4">
           <ActivityIconBadge iconId={logState.definitionIconId} size="lg" />
-          <div className="flex-1 min-w-0 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-base font-semibold text-slate-900">
-                {logState.definitionTitle}
-              </h3>
-              {optionLabels && (
-                <span className="text-sm text-slate-500">{optionLabels}</span>
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900">
+                  {logState.definitionTitle}
+                </h3>
+                {optionLabels && (
+                  <span className="text-sm text-slate-500">{optionLabels}</span>
+                )}
+              </div>
+              {isMine && (
+                <div className="relative">
+                  <button
+                    ref={menuButtonRef}
+                    type="button"
+                    onClick={() => setIsMenuOpen((prev) => !prev)}
+                    className="rounded-full border border-transparent p-2 text-slate-400 transition hover:border-slate-300 hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    aria-label="アクティビティメニューを開く"
+                    aria-expanded={isMenuOpen}
+                    aria-haspopup="menu"
+                  >
+                    <EllipsisHorizontalIcon className="h-5 w-5" />
+                  </button>
+                  {isMenuOpen && (
+                    <div
+                      ref={menuRef}
+                      role="menu"
+                      className="absolute right-0 z-20 mt-2 w-40 rounded-lg border border-slate-200 bg-white p-1 text-sm text-slate-700 shadow-lg ring-1 ring-black/5"
+                    >
+                      <button
+                        type="button"
+                        onClick={handleEditMenuClick}
+                        role="menuitem"
+                        className="flex w-full items-center justify-between rounded-md px-3 py-2 hover:bg-slate-100"
+                      >
+                        編集
+                        <PencilSquareIcon className="h-4 w-4 text-slate-400" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        role="menuitem"
+                        disabled={isDeleting}
+                        className="flex w-full items-center justify-between rounded-md px-3 py-2 text-rose-500 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        削除
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
             <div className="flex items-center gap-3 text-xs text-slate-600">
               <span>{executedAtLabel}</span>
-              {isMine && (
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditorOpen(true)}
-                    className="rounded-md border border-transparent p-1 text-slate-400 transition hover:border-slate-300 hover:text-blue-600"
-                    aria-label="アクティビティを編集"
-                  >
-                    <PencilSquareIcon className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    className="rounded-md border border-transparent p-1 text-slate-400 transition hover:border-slate-300 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
-                    aria-label="アクティビティを削除"
-                    disabled={isDeleting}
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
