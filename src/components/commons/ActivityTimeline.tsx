@@ -128,16 +128,18 @@ export function ActivityTimeline({
           まだアクティビティが投稿されていません。
         </div>
       ) : (
-        <div className="grid gap-5">
-          {logs.map((log) => (
-            <ActivityCard
-              key={log.id}
-              log={log}
-              currentUser={currentUser}
-              onDeleted={handleLogDeleted}
-              onRequestReload={handleRequestReload}
-              definitions={definitions}
-            />
+        <div className="grid gap-10">
+          {logs.map((log, index) => (
+            <div key={log.id} className="space-y-6">
+              <ActivityCard
+                log={log}
+                currentUser={currentUser}
+                onDeleted={handleLogDeleted}
+                onRequestReload={handleRequestReload}
+                definitions={definitions}
+              />
+              {index < logs.length - 1 && <div className="border-b border-slate-200" />}
+            </div>
           ))}
           <div ref={sentinelRef} />
           {isFetchingMore && (
