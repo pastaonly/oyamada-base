@@ -4,7 +4,7 @@ import Image from "next/image";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
-import { ChatBubbleLeftIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { ChatBubbleLeftIcon, HeartIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Avatar } from "@/components/common/Avatar";
 import { ActivityIconBadge } from "@/components/commons/ActivityIconBadge";
 import { ActivityCommentSection } from "@/components/commons/ActivityCommentSection";
@@ -157,20 +157,7 @@ export function ActivityCard({
   };
 
   return (
-    <article className="mx-auto flex w-full max-w-[600px] flex-col gap-4">
-      <div className="flex items-center gap-3 px-2">
-        <Avatar
-          src={logState.user.avatarUrl}
-          name={logState.user.displayName}
-          size={30}
-          className="h-[30px] w-[30px]"
-          disableInlineSize
-        />
-        <span className="text-sm font-semibold text-slate-900">
-          {logState.user.displayName || "名前未設定"}
-        </span>
-      </div>
-
+    <article className="mx-auto flex w-full max-w-[600px] flex-col gap-3">
       <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-start gap-4">
           <ActivityIconBadge iconId={logState.definitionIconId} size="lg" />
@@ -238,27 +225,40 @@ export function ActivityCard({
 
       {errorMessage && <div className="px-2 text-xs text-rose-500">{errorMessage}</div>}
 
-      <div className="flex items-center gap-4 px-2">
-        <button
-          type="button"
-          onClick={handleThanks}
-          className={clsx(
-            "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow transition",
-            isThanksAnimating ? "scale-105 bg-rose-500" : "bg-rose-600 hover:bg-rose-700",
-            (isThanksCoolingDown || isMine) && "cursor-not-allowed opacity-60 hover:bg-rose-600",
-          )}
-          disabled={isThanksCoolingDown || isMine}
-        >
-          Thanks! {logState.thanksCount}
-        </button>
-        <button
-          type="button"
-          onClick={() => setIsCommentModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-blue-300 hover:text-blue-600"
-        >
-          <ChatBubbleLeftIcon className="h-4 w-4" />
-          {logState.commentCount}
-        </button>
+      <div className="flex flex-wrap items-center gap-2 px-2">
+        <div className="flex items-center gap-1.5">
+          <Avatar
+            src={logState.user.avatarUrl}
+            name={logState.user.displayName}
+            size={30}
+            className="h-[30px] w-[30px]"
+            disableInlineSize
+          />
+          <span className="text-sm font-semibold text-slate-900">
+            {logState.user.displayName || "名前未設定"}
+          </span>
+          <button
+            type="button"
+            onClick={handleThanks}
+            className={clsx(
+              "inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold text-rose-600 transition",
+              isThanksAnimating ? "scale-105" : "hover:text-rose-700",
+              (isThanksCoolingDown || isMine) && "cursor-not-allowed opacity-50",
+            )}
+            disabled={isThanksCoolingDown || isMine}
+          >
+            <HeartIcon className="h-5 w-5" />
+            <span>{logState.thanksCount}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsCommentModalOpen(true)}
+            className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:text-blue-600"
+          >
+            <ChatBubbleLeftIcon className="h-4 w-4" />
+            {logState.commentCount}
+          </button>
+        </div>
       </div>
 
       <ActivityPhotoModal
