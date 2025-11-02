@@ -1,9 +1,10 @@
 'use client';
 
 import Image from "next/image";
+import { createPortal } from "react-dom";
 import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
-import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { ChatBubbleLeftIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Avatar } from "@/components/common/Avatar";
 import { ActivityIconBadge } from "@/components/commons/ActivityIconBadge";
 import { ActivityCommentSection } from "@/components/commons/ActivityCommentSection";
@@ -73,6 +74,7 @@ export function ActivityCard({
   const [logState, setLogState] = useState<ActivityLog>(log);
   const [isPhotoOpen, setIsPhotoOpen] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [isThanksCoolingDown, setIsThanksCoolingDown] = useState(false);
   const [isThanksAnimating, setIsThanksAnimating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -88,7 +90,7 @@ export function ActivityCard({
     if (logState.optionLabels && logState.optionLabels.length > 0) {
       return logState.optionLabels.join("・");
     }
-    return "オプションなし";
+    return null;
   }, [logState.optionLabels]);
 
   const handleThanks = async () => {
@@ -117,7 +119,7 @@ export function ActivityCard({
       }, 500);
       setTimeout(() => {
         setIsThanksAnimating(false);
-      }, 400);
+      }, 300);
     }
   };
 
@@ -155,16 +157,31 @@ export function ActivityCard({
   };
 
   return (
-    <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <article className="mx-auto flex w-full max-w-[600px] flex-col gap-4">
+      <div className="flex items-center gap-3 px-2">
+        <Avatar
+          src={logState.user.avatarUrl}
+          name={logState.user.displayName}
+          size={30}
+          className="h-[30px] w-[30px]"
+          disableInlineSize
+        />
+        <span className="text-sm font-semibold text-slate-900">
+          {logState.user.displayName || "名前未設定"}
+        </span>
+      </div>
+
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-start gap-4">
           <ActivityIconBadge iconId={logState.definitionIconId} size="lg" />
-          <div className="flex flex-col gap-0">
+          <div className="flex-1 min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-base font-semibold text-slate-900">
                 {logState.definitionTitle}
               </h3>
-              <span className="text-sm text-slate-500">{optionLabels}</span>
+              {optionLabels && (
+                <span className="text-sm text-slate-500">{optionLabels}</span>
+              )}
             </div>
             <div className="flex items-center gap-3 text-xs text-slate-600">
               <span>{executedAtLabel}</span>
@@ -192,71 +209,57 @@ export function ActivityCard({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Avatar
-            src={logState.user.avatarUrl}
-            name={logState.user.displayName}
-            className="h-10 w-10"
-          />
-          <div className="text-right">
-            <p className="text-sm font-semibold text-slate-800">
-              {logState.user.displayName || "名前未設定"}
-            </p>
-            <p className="text-xs text-slate-400">投稿者</p>
-          </div>
-        </div>
-      </div>
 
-      {logState.note && (
-        <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-          {logState.note}
-        </p>
-      )}
+        {logState.note && (
+          <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+            {logState.note}
+          </p>
+        )}
 
-      {logState.photo && (
-        <button
-          type="button"
-          onClick={() => setIsPhotoOpen(true)}
-          className="mt-4 block overflow-hidden rounded-2xl border border-slate-200 transition hover:shadow-lg"
-        >
-          <div className="relative h-52 w-full">
-            <Image
-              src={logState.photo.thumbnailUrl}
-              alt={`${logState.definitionTitle} の写真`}
-              fill
-              className="object-cover"
-              sizes="(min-width: 640px) 480px, 100vw"
-              unoptimized
-            />
-          </div>
-        </button>
-      )}
-
-      <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-slate-100 pt-4 text-sm text-slate-500">
-        {errorMessage && <span className="text-xs text-rose-500">{errorMessage}</span>}
-      </div>
-
-      {!isMine && (
-        <div className="mt-4 flex flex-wrap items-center gap-3">
+        {logState.photo && (
           <button
             type="button"
-            onClick={handleThanks}
-            className={clsx(
-              "rounded-full px-4 py-2 text-sm font-semibold text-white shadow transition",
-              isThanksAnimating ? "scale-105 bg-rose-500" : "bg-rose-600 hover:bg-rose-700",
-            )}
-            disabled={isThanksCoolingDown}
+            onClick={() => setIsPhotoOpen(true)}
+            className="mt-4 block overflow-hidden rounded-2xl border border-slate-200 transition hover:shadow-lg"
           >
-            Thanks! {logState.thanksCount}
+            <div className="relative h-52 w-full">
+              <Image
+                src={logState.photo.thumbnailUrl}
+                alt={`${logState.definitionTitle} の写真`}
+                fill
+                className="object-cover"
+                sizes="(min-width: 640px) 480px, 100vw"
+                unoptimized
+              />
+            </div>
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
-      <ActivityCommentSection
-        logId={logState.id}
-        currentUser={currentUser}
-        onCountChange={handleCommentCountChange}
-      />
+      {errorMessage && <div className="px-2 text-xs text-rose-500">{errorMessage}</div>}
+
+      <div className="flex items-center gap-4 px-2">
+        <button
+          type="button"
+          onClick={handleThanks}
+          className={clsx(
+            "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow transition",
+            isThanksAnimating ? "scale-105 bg-rose-500" : "bg-rose-600 hover:bg-rose-700",
+            (isThanksCoolingDown || isMine) && "cursor-not-allowed opacity-60 hover:bg-rose-600",
+          )}
+          disabled={isThanksCoolingDown || isMine}
+        >
+          Thanks! {logState.thanksCount}
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsCommentModalOpen(true)}
+          className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-blue-300 hover:text-blue-600"
+        >
+          <ChatBubbleLeftIcon className="h-4 w-4" />
+          {logState.commentCount}
+        </button>
+      </div>
 
       <ActivityPhotoModal
         isOpen={isPhotoOpen}
@@ -274,6 +277,41 @@ export function ActivityCard({
           onUpdated={handleEditSuccess}
         />
       )}
+
+      {isCommentModalOpen
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[280] flex items-center justify-center bg-black/60 px-4 py-6"
+              role="dialog"
+              aria-modal="true"
+              onClick={() => setIsCommentModalOpen(false)}
+            >
+              <div
+                className="flex h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                  <h2 className="text-base font-semibold text-slate-900">コメント</h2>
+                  <button
+                    type="button"
+                    onClick={() => setIsCommentModalOpen(false)}
+                    className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600 transition hover:border-blue-300 hover:text-blue-600"
+                  >
+                    閉じる
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto px-6 py-5">
+                  <ActivityCommentSection
+                    logId={logState.id}
+                    currentUser={currentUser}
+                    onCountChange={handleCommentCountChange}
+                  />
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </article>
   );
 }

@@ -114,7 +114,7 @@ export function ActivityTimeline({
   };
 
   return (
-    <section className="grid gap-5">
+    <section className="mx-auto grid w-full max-w-[600px] gap-5">
       <div className="flex flex-wrap items-center justify-center">
         {triggerButton}
       </div>
