@@ -204,12 +204,12 @@ export function ActivityCard({
         )}
 
         {logState.photo && (
-          <button
-            type="button"
-            onClick={() => setIsPhotoOpen(true)}
-            className="mt-4 block overflow-hidden rounded-2xl border border-slate-200 transition hover:shadow-lg"
-          >
-            <div className="relative h-52 w-full">
+          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setIsPhotoOpen(true)}
+              className="relative block h-52 w-full transition hover:shadow-lg"
+            >
               <Image
                 src={logState.photo.thumbnailUrl}
                 alt={`${logState.definitionTitle} の写真`}
@@ -218,8 +218,8 @@ export function ActivityCard({
                 sizes="(min-width: 640px) 480px, 100vw"
                 unoptimized
               />
-            </div>
-          </button>
+            </button>
+          </div>
         )}
       </div>
 
