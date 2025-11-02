@@ -206,17 +206,22 @@ export function ActivityCard({
   return (
     <article className="mx-auto flex w-full max-w-[600px] flex-col gap-3">
       <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex items-start gap-4">
+        <div className="flex items-center gap-4">
           <ActivityIconBadge iconId={logState.definitionIconId} size="lg" />
-          <div className="min-w-0 flex-1 space-y-2">
+          <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-base font-semibold text-slate-900">
-                  {logState.definitionTitle}
-                </h3>
-                {optionLabels && (
-                  <span className="text-sm text-slate-500">{optionLabels}</span>
-                )}
+              <div className="flex flex-col leading-tight">
+                <span className="text-xs font-medium text-slate-900 mt-[5px] mb-[-2px]">
+                  {executedAtLabel}
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base font-semibold text-slate-900">
+                    {logState.definitionTitle}
+                  </h3>
+                  {optionLabels && (
+                    <span className="text-sm text-slate-500">{optionLabels}</span>
+                  )}
+                </div>
               </div>
               {isMine && (
                 <div className="relative">
@@ -260,9 +265,6 @@ export function ActivityCard({
                   )}
                 </div>
               )}
-            </div>
-            <div className="flex items-center gap-3 text-xs text-slate-600">
-              <span>{executedAtLabel}</span>
             </div>
           </div>
         </div>
