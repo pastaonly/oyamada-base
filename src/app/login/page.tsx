@@ -10,6 +10,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebaseConfig";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const CONTRACT_COLLECTION = "memberContracts";
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
@@ -19,6 +20,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLineInAppBrowser, setIsLineInAppBrowser] = useState(false);
+  const { user, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -27,6 +29,22 @@ export default function LoginPage() {
     const ua = window.navigator.userAgent ?? "";
     setIsLineInAppBrowser(/\bLine\//i.test(ua));
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      router.replace("/");
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/");
+    }
+  }, [authLoading, user, router]);
 
   const handleSuccess = async (credential: UserCredential) => {
     const email = credential.user.email;
@@ -100,6 +118,14 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  if (authLoading || auth.currentUser || user) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-6 py-12 text-slate-500">
+        リダイレクト中...
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-6 py-12 text-slate-900">
