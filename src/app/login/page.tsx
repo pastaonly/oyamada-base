@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   GoogleAuthProvider,
@@ -18,6 +18,15 @@ export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLineInAppBrowser, setIsLineInAppBrowser] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const ua = window.navigator.userAgent ?? "";
+    setIsLineInAppBrowser(/\bLine\//i.test(ua));
+  }, []);
 
   const handleSuccess = async (credential: UserCredential) => {
     const email = credential.user.email;
@@ -101,6 +110,11 @@ export default function LoginPage() {
         <p className="mt-2 text-sm text-gray-500">
           会員用ログインページです。Googleアカウントでログインしてください。
         </p>
+        {isLineInAppBrowser && (
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            LINEアプリ内ブラウザではGoogleログインが正常に動作しません。画面下のメニューから「リンクをコピー」して、標準ブラウザでアクセスしてください。
+          </div>
+        )}
 
         <button
           type="button"
