@@ -1,6 +1,6 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, enableIndexedDbPersistence, type FirestoreError } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -27,3 +27,18 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export default app;
+
+if (typeof window !== "undefined") {
+  void enableIndexedDbPersistence(db).catch((error) => {
+    const firestoreError = error as FirestoreError;
+    if (firestoreError?.code === "failed-precondition" || firestoreError?.code === "unimplemented") {
+      if (process.env.NODE_ENV !== "production") {
+        console.info("Firestore persistence unavailable in this environment");
+      }
+      return;
+    }
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("Failed to enable Firestore persistence", error);
+    }
+  });
+}
