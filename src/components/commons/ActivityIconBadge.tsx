@@ -5,11 +5,13 @@ import { getCommonsIconById } from "@/constants/commons";
 
 type ActivityIconBadgeProps = {
   iconId: string | null;
-  size?: "sm" | "md" | "lg";
+  size?: ActivityIconBadgeSize;
   className?: string;
 };
 
-const SIZE_CLASSES: Record<ActivityIconBadgeProps["size"], string> = {
+type ActivityIconBadgeSize = "sm" | "md" | "lg";
+
+const SIZE_CLASSES: Record<ActivityIconBadgeSize, string> = {
   sm: "h-8 w-8 text-sm",
   md: "h-10 w-10 text-base",
   lg: "h-12 w-12 text-lg",

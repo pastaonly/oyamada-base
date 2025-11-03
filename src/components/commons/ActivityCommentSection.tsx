@@ -160,7 +160,12 @@ export function ActivityCommentSection({
         const isEditing = editingCommentId === comment.id;
         return (
           <li key={comment.id} className="flex gap-3 rounded-xl bg-slate-50 p-3">
-            <Avatar src={comment.user.avatarUrl} name={comment.user.displayName} className="h-9 w-9" />
+            <Avatar
+              src={comment.user.avatarUrl}
+              fallback={comment.user.displayName}
+              title={comment.user.displayName || undefined}
+              className="h-9 w-9"
+            />
             <div className="flex-1 space-y-1">
               <div className="flex flex-wrap items-center gap-3">
                 <span className="text-sm font-semibold text-slate-800">
@@ -253,7 +258,12 @@ export function ActivityCommentSection({
         <p className="text-sm text-slate-500">コメントはまだありません。</p>
       )}
       <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
-        <Avatar src={currentUser?.photoURL ?? ""} name={currentUser?.nickname ?? currentUser?.displayName ?? ""} className="h-9 w-9" />
+        <Avatar
+          src={currentUser?.photoURL ?? ""}
+          fallback={currentUser?.nickname ?? currentUser?.displayName ?? ""}
+          title={currentUser?.nickname ?? currentUser?.displayName ?? undefined}
+          className="h-9 w-9"
+        />
         <div className="flex-1">
           <textarea
             value={draft}

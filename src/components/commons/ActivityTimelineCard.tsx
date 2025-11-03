@@ -301,7 +301,8 @@ export function ActivityCard({
         <div className="flex items-center gap-1.5">
           <Avatar
             src={logState.user.avatarUrl}
-            name={logState.user.displayName}
+            fallback={logState.user.displayName}
+            title={logState.user.displayName || undefined}
             size={30}
             className="h-[30px] w-[30px]"
             disableInlineSize

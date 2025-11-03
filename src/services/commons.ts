@@ -21,6 +21,7 @@ import {
   writeBatch,
   type Query,
   type QueryConstraint,
+  type FieldValue,
   type QueryDocumentSnapshot,
   type QuerySnapshot,
   type Unsubscribe,
@@ -50,13 +51,15 @@ import {
 } from "@/types/commons";
 import { processActivityPhoto } from "@/utils/image";
 
+type FirestoreTimestampValue = Timestamp | FieldValue | null;
+
 type ActivityDefinitionDoc = {
   title: string;
   iconId: string;
   options: ActivityOption[];
   isActive: boolean;
-  createdAt: Timestamp | null;
-  updatedAt: Timestamp | null;
+  createdAt: FirestoreTimestampValue;
+  updatedAt: FirestoreTimestampValue;
 };
 
 type ActivityLogDoc = {
@@ -67,8 +70,8 @@ type ActivityLogDoc = {
   optionLabels: string[];
   note: string;
   executedAt: Timestamp;
-  createdAt: Timestamp | null;
-  updatedAt: Timestamp | null;
+  createdAt: FirestoreTimestampValue;
+  updatedAt: FirestoreTimestampValue;
   userId: string;
   userName: string;
   userAvatarUrl: string;
@@ -83,8 +86,8 @@ type ActivityLogDoc = {
 type ActivityCommentDoc = {
   logId: string;
   body: string;
-  createdAt: Timestamp | null;
-  updatedAt: Timestamp | null;
+  createdAt: FirestoreTimestampValue;
+  updatedAt: FirestoreTimestampValue;
   userId: string;
   userName: string;
   userAvatarUrl: string;
@@ -95,11 +98,14 @@ export type ActivityLogCursor = QueryDocumentSnapshot<ActivityLogDoc>;
 const definitionsCollection = collection(db, "activityDefinitions");
 const logsCollection = collection(db, "activityLogs");
 
-function timestampToDate(value: Timestamp | null | undefined): Date | null {
+function timestampToDate(value: FirestoreTimestampValue | undefined): Date | null {
   if (!value) {
     return null;
   }
-  return value.toDate();
+  if (value instanceof Timestamp) {
+    return value.toDate();
+  }
+  return null;
 }
 
 function mapUserSnapshot(data: {
