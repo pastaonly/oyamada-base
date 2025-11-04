@@ -1,5 +1,6 @@
 'use client';
 
+import clsx from "clsx";
 import type { TimeSlotKey } from "@/constants/schedule";
 import type { ReadonlyScheduleDates, RenderCell } from "./types";
 
@@ -14,6 +15,7 @@ type MobileScheduleGridProps = {
   isUpdating: boolean;
   onBulkReserve: (slot: TimeSlotKey) => void;
   renderCell: RenderCell;
+  highlightDate?: string;
 };
 
 export function MobileScheduleGrid({
@@ -22,6 +24,7 @@ export function MobileScheduleGrid({
   isUpdating,
   onBulkReserve,
   renderCell,
+  highlightDate,
 }: MobileScheduleGridProps) {
   return (
     <div className="sm:hidden">
@@ -50,18 +53,31 @@ export function MobileScheduleGrid({
           ))}
         </div>
         <div className="divide-y divide-slate-100 text-sm text-slate-700">
-          {dates.map((item) => (
-            <div key={item.iso} className="grid grid-cols-[64px_repeat(4,_minmax(0,_1fr))]">
-              <div className="flex items-center justify-center border-r border-slate-100 px-0.5 py-1 text-xs font-medium text-slate-700">
-                <span className="text-left">{item.label.replace(/\s/g, "")}</span>
-              </div>
-              {timeSlots.map((slot) => (
-                <div key={slot.key} className="border-r border-slate-100 px-0.5 py-1.5 last:border-r-0">
-                  {renderCell(item.iso, slot.key, { compact: true })}
+          {dates.map((item) => {
+            const isHighlight = highlightDate === item.iso;
+            return (
+              <div
+                key={item.iso}
+                className="grid grid-cols-[64px_repeat(4,_minmax(0,_1fr))]"
+              >
+                <div className="flex items-center justify-center border-r border-slate-100 px-0.5 py-1 text-xs font-semibold text-slate-900">
+                  <span
+                    className={clsx(
+                      "px-2 py-0.5 text-left",
+                      isHighlight && "rounded-full border-2 border-slate-200 bg-amber-100",
+                    )}
+                  >
+                    {item.label.replace(/\s/g, "")}
+                  </span>
                 </div>
-              ))}
-            </div>
-          ))}
+                {timeSlots.map((slot) => (
+                  <div key={slot.key} className="border-r border-t border-slate-100 px-0.5 py-1.5 last:border-r-0">
+                    {renderCell(item.iso, slot.key, { compact: true })}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import clsx from "clsx";
 import type { TimeSlotKey } from "@/constants/schedule";
 import type { ReadonlyScheduleDates, RenderCell } from "./types";
 
@@ -14,6 +15,7 @@ type DesktopScheduleGridProps = {
   isUpdating: boolean;
   onBulkReserve: (slot: TimeSlotKey) => void;
   renderCell: RenderCell;
+  highlightDate?: string;
 };
 
 export function DesktopScheduleGrid({
@@ -22,18 +24,34 @@ export function DesktopScheduleGrid({
   isUpdating,
   onBulkReserve,
   renderCell,
+  highlightDate,
 }: DesktopScheduleGridProps) {
   return (
     <div className="hidden overflow-x-auto sm:block">
       <div className="min-w-[640px] rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="grid grid-cols-[150px_repeat(7,_1fr)] border-b border-slate-100 bg-slate-100/40 text-sm font-medium text-slate-600">
           <div className="flex items-center justify-center border-r border-slate-100 py-3">時間帯</div>
-          {dates.map((item) => (
-            <div key={item.iso} className="flex items-center justify-center border-r border-slate-100 py-3 last:border-r-0">
-              {item.label}
+        {dates.map((item) => {
+          const isHighlight = highlightDate === item.iso;
+          return (
+            <div
+              key={item.iso}
+              className="flex items-center justify-center border-r border-slate-100 py-3 last-border-r-0"
+            >
+              <span
+                className={clsx(
+                  "px-3 py-1 text-sm",
+                  isHighlight
+                    ? "rounded-full border-2 border-slate-200 bg-amber-100 font-semibold text-slate-900"
+                    : "text-slate-600",
+                )}
+              >
+                {item.label}
+              </span>
             </div>
-          ))}
-        </div>
+          );
+        })}
+      </div>
         {timeSlots.map((slot) => (
           <div
             key={slot.key}
@@ -53,7 +71,10 @@ export function DesktopScheduleGrid({
               </button>
             </div>
             {dates.map((item) => (
-              <div key={`${item.iso}-${slot.key}`} className="border-r border-slate-100 px-2 py-2 last:border-r-0">
+              <div
+                key={`${item.iso}-${slot.key}`}
+                className="border-r border-t border-slate-100 px-2 py-2 last:border-r-0"
+              >
                 {renderCell(item.iso, slot.key)}
               </div>
             ))}
