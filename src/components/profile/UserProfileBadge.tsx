@@ -76,7 +76,18 @@ export function UserProfileBadge() {
   };
 
   if (!user || !userProfile) {
-    return null;
+    return (
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          onClick={handleSignOut}
+          disabled={isSigningOut}
+          className="rounded-full border border-red-200 px-3 py-1 text-xs font-medium text-red-500 transition hover:border-red-300 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isSigningOut ? "ログアウト中..." : "ログアウト"}
+        </button>
+      </div>
+    );
   }
 
   const displayName = userProfile.nickname || userProfile.displayName || userProfile.email;
