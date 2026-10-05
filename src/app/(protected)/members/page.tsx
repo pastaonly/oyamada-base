@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { collection, doc, onSnapshot, orderBy, query, setDoc } from "firebase/firestore";
 import { Avatar } from "@/components/common/Avatar";
 import { MarkdownContent } from "@/components/common/MarkdownContent";
@@ -66,6 +66,13 @@ export default function MembersPage() {
   const [preferredRoomDraft, setPreferredRoomDraft] = useState<SpaceKey | null>(null);
   const [isSavingPreferredRoom, setIsSavingPreferredRoom] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
+
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviteRoom, setInviteRoom] = useState<SpaceKey | null>(null);
+  const [isInviting, setIsInviting] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   useEffect(() => {
     const membersQuery = query(collection(db, "users"), orderBy("nickname", "asc"));
@@ -231,6 +238,55 @@ const selectedMember = selectedMemberId
     }
   };
 
+  const resetInviteForm = () => {
+    setInviteEmail("");
+    setInviteName("");
+    setInviteRoom(null);
+    setInviteError(null);
+  };
+
+  const handleInviteSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!isAdmin) {
+      setInviteError("登録権限がありません");
+      return;
+    }
+
+    const email = inviteEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setInviteError("メールアドレスの形式が正しくありません");
+      return;
+    }
+
+    const alreadyExists =
+      contractRecords.some((record) => record.email.toLowerCase() === email) ||
+      registeredMembers.some((member) => member.email.toLowerCase() === email);
+    if (alreadyExists) {
+      setInviteError("このメールアドレスは既に登録されています");
+      return;
+    }
+
+    setIsInviting(true);
+    setInviteError(null);
+
+    try {
+      await setDoc(doc(db, CONTRACT_COLLECTION, email), {
+        email,
+        displayName: inviteName.trim(),
+        preferredRoom: inviteRoom ?? null,
+      });
+      resetInviteForm();
+      setIsInviteOpen(false);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "事前登録に失敗しました";
+      setInviteError(message);
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex min-h-[200px] items-center justify-center text-slate-600">
@@ -241,6 +297,20 @@ const selectedMember = selectedMemberId
 
   return (
     <div className="space-y-6">
+      {isAdmin && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => {
+              resetInviteForm();
+              setIsInviteOpen(true);
+            }}
+            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-blue-700"
+          >
+            メンバーを事前登録
+          </button>
+        </div>
+      )}
 
       {combinedMembers.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-8 text-center text-sm text-slate-500">
@@ -308,6 +378,89 @@ const selectedMember = selectedMemberId
               </article>
             );
           })}
+        </div>
+      )}
+
+      {isAdmin && isInviteOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 py-8"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setIsInviteOpen(false)}
+        >
+          <form
+            onSubmit={handleInviteSubmit}
+            className="w-full max-w-md space-y-4 rounded-3xl bg-white p-6 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">メンバーを事前登録</h3>
+              <p className="mt-1 text-xs text-slate-500">
+                登録したGoogleアカウントのメールアドレスでログインできるようになります。
+              </p>
+            </div>
+            <label className="block text-sm text-slate-700">
+              <span className="font-medium">メールアドレス（必須）</span>
+              <input
+                type="email"
+                required
+                value={inviteEmail}
+                onChange={(event) => setInviteEmail(event.target.value)}
+                placeholder="example@gmail.com"
+                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+              />
+            </label>
+            <label className="block text-sm text-slate-700">
+              <span className="font-medium">表示名</span>
+              <input
+                type="text"
+                value={inviteName}
+                onChange={(event) => setInviteName(event.target.value)}
+                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+              />
+            </label>
+            <div className="text-sm text-slate-700">
+              <span className="font-medium">優先部屋</span>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {ROOM_OPTIONS.map((option) => (
+                  <label
+                    key={option.label}
+                    className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition ${
+                      inviteRoom === option.value
+                        ? "border-blue-400 bg-blue-50 text-blue-700"
+                        : "border-slate-200 bg-white hover:border-blue-300"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="inviteRoom"
+                      className="h-4 w-4"
+                      checked={inviteRoom === option.value}
+                      onChange={() => setInviteRoom(option.value)}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            {inviteError && <p className="text-xs font-medium text-red-600">{inviteError}</p>}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsInviteOpen(false)}
+                className="rounded-full border border-slate-200 px-4 py-2 text-sm text-slate-600 transition hover:border-blue-300 hover:text-blue-600"
+              >
+                キャンセル
+              </button>
+              <button
+                type="submit"
+                disabled={isInviting}
+                className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isInviting ? "登録中..." : "登録する"}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
