@@ -8,12 +8,9 @@ import {
   signOut,
   UserCredential,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "@/lib/firebaseConfig";
+import { auth } from "@/lib/firebaseConfig";
+import { ensureUserProfile, UnregisteredMemberError } from "@/services/profile";
 import { useAuth } from "@/components/auth/AuthProvider";
-
-const CONTRACT_COLLECTION = "memberContracts";
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,60 +38,20 @@ export default function LoginPage() {
   }, [router]);
 
   useEffect(() => {
-    if (!authLoading && user) {
+    // ログイン処理中はプロフィール作成の完了を待ってから handleSuccess で遷移する
+    if (!authLoading && user && !isLoading) {
       router.replace("/");
     }
-  }, [authLoading, user, router]);
+  }, [authLoading, user, isLoading, router]);
 
   const handleSuccess = async (credential: UserCredential) => {
-    const email = credential.user.email;
-
-    if (!email) {
-      throw new Error("メールアドレスが取得できませんでした。");
-    }
-
-    // 事前登録済みメールアドレス（管理者が Firestore 上で管理）を確認
-    const contractSnapshot = await getDoc(
-      doc(db, CONTRACT_COLLECTION, email),
-    );
-
-    if (!contractSnapshot.exists()) {
-      await signOut(auth);
-      throw new Error("このメールアドレスは登録されていません");
-    }
-
-    const userDocRef = doc(db, "users", credential.user.uid);
-    const userDocSnapshot = await getDoc(userDocRef);
-    const isAdmin = ADMIN_EMAIL ? email === ADMIN_EMAIL : false;
-
-    const commonProfileFields = {
-      uid: credential.user.uid,
-      email,
-      displayName: credential.user.displayName ?? "",
-      isAdmin,
-      updatedAt: serverTimestamp(),
-    };
-
-    if (userDocSnapshot.exists()) {
-      await setDoc(userDocRef, commonProfileFields, { merge: true });
-    } else {
-      await setDoc(
-        userDocRef,
-        {
-          ...commonProfileFields,
-          photoURL: credential.user.photoURL ?? "",
-          nickname: credential.user.displayName ?? "",
-          bio: "",
-          createdAt: serverTimestamp(),
-          memberType: null,
-          contributionSummary: {
-            cleaningCount: 0,
-            lastCleaningAt: null,
-            weeklyUsageCount: 0,
-          },
-        },
-        { merge: true },
-      );
+    try {
+      await ensureUserProfile(credential.user);
+    } catch (error) {
+      if (error instanceof UnregisteredMemberError) {
+        await signOut(auth);
+      }
+      throw error;
     }
 
     router.push("/");
@@ -119,7 +76,7 @@ export default function LoginPage() {
     }
   };
 
-  if (authLoading || auth.currentUser || user) {
+  if (!isLoading && (authLoading || auth.currentUser || user)) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-6 py-12 text-slate-500">
         リダイレクト中...

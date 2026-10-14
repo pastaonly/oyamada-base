@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebaseConfig";
+import { signOut } from "firebase/auth";
+import { auth, db } from "@/lib/firebaseConfig";
+import { ensureUserProfile, UnregisteredMemberError } from "@/services/profile";
 import { useAuth } from "@/components/auth/AuthProvider";
 import type { AppUser } from "@/types/user";
 
@@ -25,25 +27,38 @@ export function useUserProfile(): UseUserProfileResult {
       return;
     }
 
+    let isEnsuring = false;
     const unsubscribe = onSnapshot(doc(db, "users", user.uid), (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data() as Partial<AppUser>;
-        setUserProfile({
-          uid: user.uid,
-          email: data.email ?? user.email ?? "",
-          displayName: data.displayName ?? user.displayName ?? "",
-          nickname: data.nickname ?? data.displayName ?? user.displayName ?? "",
-          bio: data.bio ?? "",
-          photoURL: data.photoURL ?? user.photoURL ?? "",
-          isAdmin: data.isAdmin ?? false,
-          memberType: data.memberType ?? null,
-          contributionSummary: {
-            cleaningCount: data.contributionSummary?.cleaningCount ?? 0,
-            lastCleaningAt: data.contributionSummary?.lastCleaningAt ?? null,
-            weeklyUsageCount: data.contributionSummary?.weeklyUsageCount ?? 0,
-          },
-        });
+      if (!snapshot.exists()) {
+        // ログイン途中で中断され users/{uid} が無い場合はここで作成する
+        if (!isEnsuring) {
+          isEnsuring = true;
+          ensureUserProfile(user).catch(async (error) => {
+            console.error(error);
+            if (error instanceof UnregisteredMemberError) {
+              await signOut(auth);
+            }
+          });
+        }
+        return;
       }
+
+      const data = snapshot.data() as Partial<AppUser>;
+      setUserProfile({
+        uid: user.uid,
+        email: data.email ?? user.email ?? "",
+        displayName: data.displayName ?? user.displayName ?? "",
+        nickname: data.nickname ?? data.displayName ?? user.displayName ?? "",
+        bio: data.bio ?? "",
+        photoURL: data.photoURL ?? user.photoURL ?? "",
+        isAdmin: data.isAdmin ?? false,
+        memberType: data.memberType ?? null,
+        contributionSummary: {
+          cleaningCount: data.contributionSummary?.cleaningCount ?? 0,
+          lastCleaningAt: data.contributionSummary?.lastCleaningAt ?? null,
+          weeklyUsageCount: data.contributionSummary?.weeklyUsageCount ?? 0,
+        },
+      });
       setIsLoading(false);
     });
 
